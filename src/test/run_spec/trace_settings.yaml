@@ -8,7 +8,7 @@ header:
   description: "Trace Logging Test Env Settings"
 trace_log:
   index_name: "trace_log"
-  index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/src/lib/aitrace/elastic_index_trace_log.json"
+  index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/src/lib/rltrace/elastic_index_trace_log.json"
 notification_log:
   index_name: "notification_log"
-  index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/src/lib/aitrace/elastic_index_notification_log.json"
+  index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/src/lib/rltrace/elastic_index_notification_log.json"
