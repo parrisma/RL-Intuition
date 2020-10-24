@@ -1,0 +1,11 @@
+#
+# Version: of the Settings
+# Date: Date of the version
+#
+header:
+  version: "1.0.0"
+  date: "24 Oct 2020"
+  description: "Elastic Server Test Env Settings"
+default:
+  host: "<current-host>"
+  port: "9200"
