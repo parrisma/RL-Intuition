@@ -15,9 +15,3 @@ default:
   elastic_yml: "src/test/run_spec/elastic_settings.yaml"
   trace_yml: "src/test/run_spec/trace_settings.yaml"
 
-# Spec create for current branch, testing KPubSub itself.
-kps:
-  git_root: "https://raw.githubusercontent.com/parrisma/RL-Intuition"
-  branch: "<current-git-branch>"
-  elastic_yml: "src/test/run_spec/elastic_settings.yaml"
-  trace_yml: "src/test/run_spec/trace_settings.yaml"
