@@ -1,0 +1,12 @@
+#
+# Version: of the Settings
+# Date: Date of the version
+#
+header:
+  version: "1.0.0"
+  date: "06 Jun 2020"
+  description: "Test Settings"
+kafka:
+  host: "<current-host>"
+  port: "9092"
+  msg_map_url: "https://url/file.yml" # in real case would be valid message map yaml
