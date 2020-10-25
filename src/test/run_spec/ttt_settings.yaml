@@ -8,4 +8,4 @@ header:
   description: "TicTacToe Env Specific Settings"
 ttt_event:
   index_name: "ttt_event"
-  index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/main/src/tictactoe/ttt_event.json"
+  index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/src/tictactoe/ttt_event.json"
