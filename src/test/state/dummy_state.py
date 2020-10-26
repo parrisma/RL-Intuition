@@ -22,3 +22,12 @@ class DummyState(State):
     def state_from_string(self, state_as_string: str) -> None:
         self._st = state_as_string
         return
+
+    def __hash__(self):
+        return hash(self)
+
+    def __eq__(self, other):
+        return (
+                self.__class__ == other.__class__ and
+                self._st == other._st
+        )

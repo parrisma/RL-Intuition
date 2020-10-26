@@ -1,4 +1,4 @@
-import logging
+from typing import Tuple
 from random import randint
 
 import numpy as np
@@ -7,7 +7,8 @@ from src.tictactoe.TicTacToeState import TicTacToeState
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
-from src.lib.rltrace.trace import Trace
+from src.lib.envboot.env import Env
+from src.lib.uniqueref import UniqueRef
 
 
 class TicTacToe(Environment):
@@ -39,15 +40,20 @@ class TicTacToe(Environment):
     # to an initial up-played set-up
     #
     def __init__(self, x: Agent,
-                 o: Agent,
-                 lg: logging,
-                 save_on_exit: bool = False):
-        Trace()
-        self.__lg = lg
-        self.__board = TicTacToe.__empty_board()
+                 o: Agent):
+        self._env = Env()
+        self._trace = self._env.get_trace()
+
+        self.__session_uuid = None
+        self.__reset_session()
+
+        self.__board = None
         self.__last_board = None
-        self.__agent = TicTacToe.__no_agent
-        self.__last_agent = TicTacToe.__no_agent
+        self.__agent = None
+        self.__last_agent = None
+        self.__episode_uuid = None
+        self.new_episode()
+
         self.__x_agent = x
         self.__o_agent = o
         self.__next_agent = {x.name(): o, o.name(): x}
@@ -56,128 +62,52 @@ class TicTacToe(Environment):
         self.__agents = dict()
         self.__agents[self.__o_agent.id()] = self.__o_agent
         self.__agents[self.__x_agent.id()] = self.__x_agent
-        self.__stats = None
-        self.__save_on_exit = save_on_exit
         return
 
     #
     # Return game to initial curr_coords, where no one has played
     # and the board contains no moves.
     #
-    def reset(self):
+    def new_episode(self) -> Tuple[State, Agent]:
+        if self.__episode_uuid is not None:
+            self._trace.log().debug("End Episode [{}]".format(self.__episode_uuid))
         self.__board = TicTacToe.__empty_board()
         self.__last_board = None
         self.__agent = TicTacToe.__no_agent
         self.__last_agent = TicTacToe.__no_agent
+        self.__episode_uuid = UniqueRef().ref
+        self._trace.log().debug("Start Episode [{}]".format(self.__episode_uuid))
+        state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
+        self.__x_agent.episode_init(state)
+        self.__o_agent.episode_init(state)
+        agent = (self.__x_agent, self.__o_agent)[randint(0, 1)]
+        return state, agent
+
+    #
+    # Reset the session uuid.
+    #
+    def __reset_session(self) -> None:
+        if self.__session_uuid is not None:
+            self._trace.log().debug("End Session [{}]".format(self.__session_uuid))
+        self.__session_uuid = UniqueRef().ref
+        self._trace.log().debug("Start Session [{}]".format(self.__session_uuid))
         return
 
     #
-    # An array of all the environment attributes
+    # Run the given number of episodes
     #
-    def attribute_names(self) -> [str]:
-        return None
-
-    #
-    # Get the named attribute
-    #
-    def attribute(self, attribute_name: str) -> object:
-        return None
-
-    #
-    # Reset the statistics.
-    #
-    def __reset_stats(self) -> None:
-        self.__stats = dict()
-        self.__stats[self.__episode] = 1
-        self.__stats[self.__o_agent.name()] = 0
-        self.__stats[self.__x_agent.name()] = 0
-        self.__stats[self.__drawn] = 0
-        self.__stats[self.__games] = dict()
-        self.__stats[self.__states] = dict()
-        return
-
-    #
-    # Keep count for given dict attr
-    #
-    def __keep_count(self,
-                     attr: str,
-                     key_as_str: str) -> None:
-        if key_as_str not in self.__stats[attr]:
-            (self.__stats[attr])[key_as_str] = 0
-        (self.__stats[attr])[key_as_str] += 1
-
-    #
-    # Keep stats for each step
-    #
-    def __keep_step_stats(self,
-                          state: State) -> None:
-        self.__keep_count(attr=self.__states, key_as_str=state.state_as_string())
-        return
-
-    #
-    # Keep stats at end of episode
-    #
-    def __keep_episode_stats(self,
-                             state: State) -> None:
-        episode_summary = self.attributes()
-        self.__keep_count(attr=self.__games, key_as_str=state.state_as_string())
-        if episode_summary[TicTacToe.attribute_won[0]]:
-            agnt = episode_summary[TicTacToe.attribute_agent[0]].name()
-            self.__stats[agnt] += 1
-            self.__stats[self.__episode] = self.__stats[self.__episode] + 1
-            self.__lg.debug(agnt + "Wins")
-
-        if episode_summary[TicTacToe.attribute_draw[0]]:
-            self.__stats[self.__drawn] += 1
-            self.__stats[self.__episode] = self.__stats[self.__episode] + 1
-            self.__lg.debug("Episode Drawn")
-
-        if self.__stats[self.__episode] % 100 == 0:
-            self.__lg.info("Stats: Agent : " + self.__x_agent.name() + " [" +
-                           str(round(
-                               (self.__stats[self.__x_agent.name()] / self.__stats[self.__episode]) * 100)) + "%] " +
-                           "Agent : " + self.__o_agent.name() + " [" +
-                           str(round(
-                               (self.__stats[self.__o_agent.name()] / self.__stats[self.__episode]) * 100)) + "%] " +
-                           "Draw : [" +
-                           str(round(
-                               (self.__stats[self.__drawn] / self.__stats[self.__episode]) * 100)) + "%] "
-                           )
-        return
-
-    #
-    # Run the given number of iterations
-    #
-    def run(self, iterations: int):
+    def run(self, num_episodes: int):
         i = 0
-        self.__reset_stats()
-        while i <= iterations:
-            self.__lg.debug("Start Episode")
-            self.reset()
-            state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
-            self.__x_agent.episode_init(state)
-            self.__o_agent.episode_init(state)
-
-            if self.__random_turns:
-                agent = (self.__x_agent, self.__o_agent)[randint(0, 1)]
-            else:
-                agent = self.__x_agent
-
+        self.__reset_session()
+        while i <= num_episodes:
+            state, agent = self.new_episode()
             while not self.episode_complete():
-                state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
-                self.__lg.debug(agent.name())
-                self.__lg.debug(state.state_as_string())
-                self.__lg.debug(state.state_as_visualisation())
                 agent = self.__play_action(agent)
-                self.__keep_step_stats(state)
                 i += 1
                 if i % 500 == 0:
-                    self.__lg.info("Iteration: " + str(i))
+                    self._trace.log().debug("Iteration: " + str(i))
 
-            self.__keep_episode_stats(state)
-            self.__lg.debug("Episode Complete")
             state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
-            self.__lg.debug(state.state_as_visualisation())
             self.__x_agent.episode_complete(state)
             self.__o_agent.episode_complete(state)
         self.__x_agent.terminate()
@@ -231,7 +161,7 @@ class TicTacToe(Environment):
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
 
         # Make the play on the board.
-        self.__lg.debug(state.state_as_array())
+        self._trace.log().debug(state.state_as_array())
         action = agent.choose_action(state, self.__actions_ids_left_to_take())
         if action not in self.__actions_ids_left_to_take():
             raise TicTacToe.IllegalActorAction("Actor Proposed Illegal action in current state :" + str(action))
@@ -366,18 +296,6 @@ class TicTacToe(Environment):
         return self.__internal_state_to_string(self.__board)
 
     #
-    # Load Environment from file
-    #
-    def load(self, file_name: str):
-        raise NotImplementedError("load() not implemented for TicTacTo")
-
-    #
-    # Save Environment to file
-    #
-    def save(self, file_name: str):
-        raise NotImplementedError("save() not implemented for TicTacTo")
-
-    #
     # Expose current environment curr_coords as string
     #
     def export_state(self):
@@ -402,18 +320,3 @@ class TicTacToe(Environment):
     class IllegalActorAction(Exception):
         def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
-
-    #
-    # Randomise Player Turns, if not Random then player X always goes first
-    #
-    @property
-    def random_player_turns(self) -> bool:
-        return self.__random_turns
-
-    @random_player_turns.setter
-    def random_player_turns(self,
-                            value: bool) -> None:
-        if type(value) != bool:
-            raise TypeError("Player turns is boolean cannot not be type [" + type(value).__name__ + "]")
-        self.__random_turns = value
-        return

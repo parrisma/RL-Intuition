@@ -46,20 +46,6 @@ class Environment(metaclass=abc.ABCMeta):
         pass
 
     #
-    # Save the current Environment State
-    #
-    @abc.abstractmethod
-    def save(self, file_name: str) -> None:
-        pass
-
-    #
-    # Load the current Environment State
-    #
-    @abc.abstractmethod
-    def load(self, file_name: str):
-        pass
-
-    #
     # Import the current Environment State from given State as string
     # ToDo: Remove and reconsider test strategy using test Agents
     #

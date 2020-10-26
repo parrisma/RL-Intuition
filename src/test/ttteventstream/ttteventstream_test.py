@@ -77,8 +77,12 @@ class TestTTTEventStream(unittest.TestCase):
                            state=DummyState(),
                            action="1",
                            reward=3.142,
-                           episode_end=True)
+                           episode_end=True,
+                           episode_outcome=TicTacToeEventStream.TicTacToeEvent.STEP)
+
+        TestTTTEventStream._es.indices.flush(index=TestTTTEventStream._settings.ttt_event_index_name)
         time.sleep(1)
+
         cnt = ESUtil.run_count(es=TestTTTEventStream._es,
                                idx_name=TestTTTEventStream._settings.ttt_event_index_name,
                                json_query=TestTTTEventStream.SESSION_UUID_Q,
@@ -97,23 +101,46 @@ class TestTTTEventStream(unittest.TestCase):
         episode_id = UniqueRef().ref
         evnts = list()
         num_to_test = 10
+        outcomes = [TicTacToeEventStream.TicTacToeEvent.X_WIN,
+                    TicTacToeEventStream.TicTacToeEvent.O_WIN,
+                    TicTacToeEventStream.TicTacToeEvent.DRAW]
 
         for i in range(0, num_to_test, 1):
+            eend = (i == num_to_test - 1)
+            if eend:
+                outc = outcomes[np.random.randint(3)]
+            else:
+                outc = TicTacToeEventStream.TicTacToeEvent.STEP
+
             ttt_e = TicTacToeEventStream.TicTacToeEvent(episode_uuid=episode_id,
                                                         episode_step=i,
                                                         state=DummyState(),
                                                         action=str(np.random.randint(100)),
                                                         reward=np.random.random(),
-                                                        episode_end=(i == num_to_test - 1))
+                                                        episode_end=eend,
+                                                        episode_outcome=outc)
             tttes.record_event(episode_uuid=ttt_e.episode_uuid,
                                episode_step=ttt_e.episode_step,
                                state=ttt_e.state,
                                action=ttt_e.action,
                                reward=ttt_e.reward,
-                               episode_end=ttt_e.episode_end)
+                               episode_end=ttt_e.episode_end,
+                               episode_outcome=ttt_e.episode_outcome)
             evnts.append(ttt_e)
+
+        TestTTTEventStream._es.indices.flush(index=TestTTTEventStream._settings.ttt_event_index_name)
         time.sleep(1)
-        _ = tttes.get_episode(episode_uuid=episode_id)
+
+        res = tttes.get_episode(episode_uuid=episode_id)
+
+        self.assertEqual(len(evnts), len(res))
+
+        res = sorted(res, key=lambda x: x.episode_step)
+        evnts = sorted(evnts, key=lambda x: x.episode_step)
+
+        for expected, actual in zip(evnts, res):
+            self.assertEqual(True, expected == actual)
+
         return
 
 

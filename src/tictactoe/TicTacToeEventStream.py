@@ -13,6 +13,12 @@ class TicTacToeEventStream:
         action: str
         reward: float
         episode_end: bool
+        episode_outcome: str
+
+        X_WIN = "x-win"
+        O_WIN = "o-win"
+        DRAW = "draw"
+        STEP = "step"
 
         def __init__(self,
                      episode_uuid: str,
@@ -20,14 +26,31 @@ class TicTacToeEventStream:
                      state: State,
                      action: str,
                      reward: float,
-                     episode_end: bool):
+                     episode_end: bool,
+                     episode_outcome):
             self.episode_uuid = episode_uuid
             self.episode_step = episode_step
             self.state = state
             self.action = action
             self.reward = reward
             self.episode_end = episode_end
+            self.episode_outcome = episode_outcome
             return
+
+        def __eq__(self, other):
+            return (
+                    self.__class__ == other.__class__ and
+                    self.episode_uuid == other.episode_uuid and
+                    self.episode_end == other.episode_end and
+                    self.state == other.state and
+                    self.action == other.action and
+                    self.reward == other.reward and
+                    self.episode_end == other.episode_end and
+                    self.episode_outcome == other.episode_outcome
+            )
+
+        def __hash__(self):
+            return hash(self)
 
     # --- TicTacToeEventStream --
     _es: Elasticsearch
@@ -42,7 +65,8 @@ class TicTacToeEventStream:
               "state",
               "action",
               "reward",
-              "episode_end"]
+              "episode_end",
+              "episode_outcome"]
 
     SESSION_UUID_Q = '{"query":{"term":{ "session_uuid":"<arg0>"}}}'
     EPISODE_UUID_Q = '{"query":{"term":{ "episode_uuid":"<arg0>"}}}'
@@ -59,7 +83,7 @@ class TicTacToeEventStream:
             raise RuntimeError("Cannot create TicTacToeEventStream as index {} does not exist".format(es_index))
         self._state_type = state_type
         self._session_uuid = session_uuid
-        self._fmt = '{{{{"{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}"}}}}'
+        self._fmt = '{{{{"{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}"}}}}'
         self._fmt = self._fmt.format(*self._jflds)
         self._date_formatter = ESUtil.DefaultElasticDateFormatter()
         return
@@ -70,7 +94,8 @@ class TicTacToeEventStream:
                      state: State,
                      action: str,
                      reward: float,
-                     episode_end: bool) -> None:
+                     episode_end: bool,
+                     episode_outcome: str) -> None:
         """
         Persist the given event in the ttt_event index. Assume the given elastic instance has the index already
         created.
@@ -80,6 +105,7 @@ class TicTacToeEventStream:
         :param action: the action taken that gave rise to the given state
         :param reward: the reward given to the agent on entering this state
         :param episode_end: true if the given state is a terminal state for the episode
+        :param episode_outcome: The outcome of the episode X-Win, O-Win, Draw, Step
         """
         try:
             now_timestamp = self._date_formatter.format(datetime.now())
@@ -90,7 +116,8 @@ class TicTacToeEventStream:
                                         state.state_as_string(),
                                         action,
                                         str(reward),
-                                        ESUtil.bool_as_es_value(episode_end))
+                                        ESUtil.bool_as_es_value(episode_end),
+                                        episode_outcome)
             ESUtil.write_doc_to_index(es=self._es,
                                       idx_name=self._es_index,
                                       document_as_json=json_msg)
@@ -122,7 +149,9 @@ class TicTacToeEventStream:
                                                             state=st,
                                                             action=je['action'],
                                                             reward=float(je['reward']),
-                                                            episode_end=bool('true' == je['episode_end']))
+                                                            episode_end=bool('true' == je['episode_end']),
+                                                            episode_outcome=je['episode_outcome']
+                                                            )
                 res.append(ttt_e)
         except Exception as e:
             raise RuntimeError(
