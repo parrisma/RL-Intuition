@@ -31,6 +31,9 @@
       },
       "episode_end": {
         "type": "boolean"
+      },
+      "episode_outcome": {
+        "type": "text"
       }
     }
   }
