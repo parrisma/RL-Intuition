@@ -138,6 +138,32 @@ class ESUtil:
         return True
 
     @staticmethod
+    def delete_documents(es: Elasticsearch,
+                         idx_name: str,
+                         json_query: str,
+                         **kwargs) -> None:
+        """
+        Delete all documents on the givenindex that match the parameterised query
+        :param es: An open elastic search connection
+        :param idx_name: The name of the index to execute delete on
+        :param json_query: The Json query to delete by
+        :param kwargs: arguments to the json_query of the form arg0='value 0', arg1='value 1' .. argn='value n'
+                       where the argument values will be substituted into the json query before it is executed.
+                       The raw query { x: { y: <arg0> } } will have <arg0> fully replaced with the corresponding
+                       kwargs value supplied for all arg0..argn. Where there are multiple occurrences of any <argn>
+                       all occurrences will be replaced.
+        """
+        try:
+            json_query_to_delete = ESUtil.json_insert_args(json_source=json_query, **kwargs)
+            # Exception will indicate delete error.
+            es.delete_by_query(index=idx_name,
+                               body=json_query_to_delete)
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to execute delete by query [{}] on Index [{}]".format(json_query, idx_name))
+        return
+
+    @staticmethod
     def run_search(es: Elasticsearch,
                    idx_name: str,
                    json_query: str,

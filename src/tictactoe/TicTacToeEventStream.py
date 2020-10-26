@@ -6,8 +6,33 @@ from src.lib.elastic.esutil import ESUtil
 
 
 class TicTacToeEventStream:
+    class TicTacToeEvent:
+        episode_uuid: str
+        episode_step: int
+        state: State
+        action: str
+        reward: float
+        episode_end: bool
+
+        def __init__(self,
+                     episode_uuid: str,
+                     episode_step: int,
+                     state: State,
+                     action: str,
+                     reward: float,
+                     episode_end: bool):
+            self.episode_uuid = episode_uuid
+            self.episode_step = episode_step
+            self.state = state
+            self.action = action
+            self.reward = reward
+            self.episode_end = episode_end
+            return
+
+    # --- TicTacToeEventStream --
     _es: Elasticsearch
     _session_uuid: str
+    _state_type: type
     _jflds: List
 
     _jflds = ["timestamp",
@@ -19,15 +44,20 @@ class TicTacToeEventStream:
               "reward",
               "episode_end"]
 
+    SESSION_UUID_Q = '{"query":{"term":{ "session_uuid":"<arg0>"}}}'
+    EPISODE_UUID_Q = '{"query":{"term":{ "episode_uuid":"<arg0>"}}}'
+
     def __init__(self,
                  es: Elasticsearch,
                  es_index: str,
+                 state_type: type,
                  session_uuid: str):
         self._es = es
         if ESUtil.index_exists(es=es, idx_name=es_index):
             self._es_index = es_index
         else:
             raise RuntimeError("Cannot create TicTacToeEventStream as index {} does not exist".format(es_index))
+        self._state_type = state_type
         self._session_uuid = session_uuid
         self._fmt = '{{{{"{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}"}}}}'
         self._fmt = self._fmt.format(*self._jflds)
@@ -69,3 +99,32 @@ class TicTacToeEventStream:
                 "Record event failed to index [{}] with exception [{}]".format(self._es_index, str(e)))
 
         return
+
+    def get_episode(self,
+                    episode_uuid: str) -> List['TicTacToeEventStream.TicTacToeEvent']:
+        """
+        return all events for the given episode_uuid
+        :param episode_uuid: The uuid of the episode to get
+        :return: A list of TicTacToe Events for the given episode_uuid
+        """
+        try:
+            ttt_events_as_json = ESUtil.run_search(es=self._es,
+                                                   idx_name=self._es_index,
+                                                   json_query=self.EPISODE_UUID_Q,
+                                                   arg0=episode_uuid)
+            res = list()
+            for jer in ttt_events_as_json:
+                je = jer['_source']
+                st = self._state_type()
+                st.state_from_string(je['state'])
+                ttt_e = TicTacToeEventStream.TicTacToeEvent(episode_uuid=je['episode_uuid'],
+                                                            episode_step=int(je['episode_step']),
+                                                            state=st,
+                                                            action=je['action'],
+                                                            reward=float(je['reward']),
+                                                            episode_end=bool('true' == je['episode_end']))
+                res.append(ttt_e)
+        except Exception as e:
+            raise RuntimeError(
+                "Get episode failed with exception [{}]".format(str(e)))
+        return res

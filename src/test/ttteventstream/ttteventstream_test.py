@@ -1,5 +1,6 @@
-import time
 import unittest
+import time
+import numpy as np
 from elasticsearch import Elasticsearch
 from src.interface.envbuilder import EnvBuilder
 from src.lib.uniqueref import UniqueRef
@@ -20,6 +21,7 @@ class TestTTTEventStream(unittest.TestCase):
     _settings: Settings
     _run_spec: RunSpec
     _es: Elasticsearch
+    _sess_uuid: str
 
     _run = int(0)
     _trace = None
@@ -39,6 +41,7 @@ class TestTTTEventStream(unittest.TestCase):
         cls._es = cls._env.get_context()[EnvBuilder.ElasticDbConnectionContext]
         cls._settings = Settings(settings_yaml_stream=WebStream(cls._run_spec.ttt_settings_yaml()),
                                  bespoke_transforms=cls._run_spec.setting_transformers())
+        cls._sess_uuid = UniqueRef().ref
         return
 
     def setUp(self) -> None:
@@ -48,8 +51,16 @@ class TestTTTEventStream(unittest.TestCase):
         return
 
     def tearDown(self) -> None:
+        """
+        1. Delete all documents added for the test session uuid
+        """
         self._trace.log().info("- - - - - - C A S E {} Passed - - - - - -".format(TestTTTEventStream._run))
-        self._transformer = None
+
+        # Delete all documents created by this test session uuid
+        ESUtil.delete_documents(es=TestTTTEventStream._es,
+                                idx_name=TestTTTEventStream._settings.ttt_event_index_name,
+                                json_query=TestTTTEventStream.SESSION_UUID_Q,
+                                arg0=TestTTTEventStream._sess_uuid)
         return
 
     def test_1(self):
@@ -57,10 +68,10 @@ class TestTTTEventStream(unittest.TestCase):
         Test write of single dummy TTT event
         :return:
         """
-        sess_uuid = UniqueRef().ref
         tttes = TicTacToeEventStream(es=TestTTTEventStream._es,
                                      es_index=TestTTTEventStream._settings.ttt_event_index_name,
-                                     session_uuid=sess_uuid)
+                                     state_type=DummyState,
+                                     session_uuid=TestTTTEventStream._sess_uuid)
         tttes.record_event(episode_uuid=UniqueRef().ref,
                            episode_step=1,
                            state=DummyState(),
@@ -71,8 +82,38 @@ class TestTTTEventStream(unittest.TestCase):
         cnt = ESUtil.run_count(es=TestTTTEventStream._es,
                                idx_name=TestTTTEventStream._settings.ttt_event_index_name,
                                json_query=TestTTTEventStream.SESSION_UUID_Q,
-                               arg0=sess_uuid)
+                               arg0=TestTTTEventStream._sess_uuid)
         self.assertEqual(1, cnt)
+        return
+
+    def test_2(self):
+        """
+        Test an episode can be created and written back as event objects
+        """
+        tttes = TicTacToeEventStream(es=TestTTTEventStream._es,
+                                     es_index=TestTTTEventStream._settings.ttt_event_index_name,
+                                     state_type=DummyState,
+                                     session_uuid=TestTTTEventStream._sess_uuid)
+        episode_id = UniqueRef().ref
+        evnts = list()
+        num_to_test = 10
+
+        for i in range(0, num_to_test, 1):
+            ttt_e = TicTacToeEventStream.TicTacToeEvent(episode_uuid=episode_id,
+                                                        episode_step=i,
+                                                        state=DummyState(),
+                                                        action=str(np.random.randint(100)),
+                                                        reward=np.random.random(),
+                                                        episode_end=(i == num_to_test - 1))
+            tttes.record_event(episode_uuid=ttt_e.episode_uuid,
+                               episode_step=ttt_e.episode_step,
+                               state=ttt_e.state,
+                               action=ttt_e.action,
+                               reward=ttt_e.reward,
+                               episode_end=ttt_e.episode_end)
+            evnts.append(ttt_e)
+        time.sleep(1)
+        _ = tttes.get_episode(episode_uuid=episode_id)
         return
 
 

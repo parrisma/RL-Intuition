@@ -18,3 +18,7 @@ class DummyState(State):
 
     def state_as_array(self) -> np.ndarray:
         raise RuntimeError("state_as_array not implemented for {}".format(self.__class__.__name__))
+
+    def state_from_string(self, state_as_string: str) -> None:
+        self._st = state_as_string
+        return

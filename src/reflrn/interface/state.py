@@ -34,3 +34,11 @@ class State(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def state_as_array(self) -> np.ndarray:
         pass
+
+    #
+    # Initialise internal state from a string
+    #
+    @abc.abstractmethod
+    def state_from_string(self,
+                          state_as_string: str):
+        pass
