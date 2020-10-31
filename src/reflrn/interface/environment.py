@@ -11,20 +11,6 @@ from src.reflrn.interface.state import State
 class Environment(metaclass=abc.ABCMeta):
 
     #
-    # An array of all the environment attributes
-    #
-    @abc.abstractmethod
-    def attribute_names(self) -> [str]:
-        pass
-
-    #
-    # Get the named attribute
-    #
-    @abc.abstractmethod
-    def attribute(self, attribute_name: str) -> object:
-        pass
-
-    #
     # Return an array of all the actions supported by this Environment.
     #
     # Key : action_id

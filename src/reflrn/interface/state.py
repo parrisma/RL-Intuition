@@ -36,9 +36,8 @@ class State(metaclass=abc.ABCMeta):
         pass
 
     #
-    # Initialise internal state from a string
+    # Return the state in a form that can be passed directly to a NN
     #
     @abc.abstractmethod
-    def state_from_string(self,
-                          state_as_string: str):
+    def state_model_input(self) -> np.ndarray:
         pass

@@ -86,6 +86,20 @@ class TestAgent(Agent):
         self.__reset()
         return
 
+    def __str__(self):
+        """
+        Render Agent as string
+        :return: Agent as string
+        """
+        return "{}:{}".format(str(self.__id), self.__name)
+
+    def __repr__(self):
+        """
+        Render Agent as human readable
+        :return: Agent as human readable
+        """
+        return self.__str__()
+
     @property
     def explain(self) -> bool:
         raise NotImplementedError()

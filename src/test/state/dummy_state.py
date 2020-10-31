@@ -23,6 +23,9 @@ class DummyState(State):
         self._st = state_as_string
         return
 
+    def state_model_input(self) -> np.ndarray:
+        raise RuntimeError("state_as_array not implemented for {}".format(self.__class__.__name__))
+
     def __hash__(self):
         return hash(self)
 

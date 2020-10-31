@@ -1,10 +1,13 @@
 import unittest
-
 import numpy as np
-
+from src.lib.envboot.env import Env
+from src.lib.rltrace.trace import Trace
 from src.tictactoe.TicTacToe import TicTacToe
 from src.tictactoe.TicTacToeState import TicTacToeState
-from .TestAgent import TestAgent
+from src.test.ttt_test.TestAgent import TestAgent
+from src.interface.envbuilder import EnvBuilder
+from src.lib.settings import Settings
+from src.lib.webstream import WebStream
 
 
 #
@@ -13,10 +16,38 @@ from .TestAgent import TestAgent
 
 
 class TestTicTacToe(unittest.TestCase):
+    _run: int
+    _env: Env
+    _trace: Trace
+
+    _run = int(0)
+    _trace = None
+    _env = None
+
+    def __init__(self, *args, **kwargs):
+        super(TestTicTacToe, self).__init__(*args, **kwargs)
+        return
+
+    @classmethod
+    def setUpClass(cls):
+        cls._env = Env()
+        cls._trace = cls._env.get_trace()
+        cls._run_spec = cls._env.get_context()[EnvBuilder.RunSpecificationContext]
+        cls._es = cls._env.get_context()[EnvBuilder.ElasticDbConnectionContext]
+        cls._settings = Settings(settings_yaml_stream=WebStream(cls._run_spec.ttt_settings_yaml()),
+                                 bespoke_transforms=cls._run_spec.setting_transformers())
+        return
+
+    def setUp(self) -> None:
+        TestTicTacToe._run += 1
+        self._trace.log().info("- - - - - - C A S E {} Start - - - - - -".format(TestTicTacToe._run))
+        return
+
+    def tearDown(self) -> None:
+        self._trace.log().info("- - - - - - C A S E {} Passed - - - - - -".format(TestTicTacToe._run))
+        return
 
     def test_1(self):
-        print("Test for episode complete")
-
         test_cases = [("", False, False, False, TicTacToe.no_agent()),
                       ("1:0", False, False, False, 1),
                       ("1:0~1:1~1:2~-1:3~-1:4~-1:8", True, True, False, -1),
@@ -26,7 +57,10 @@ class TestTicTacToe(unittest.TestCase):
         agent_o = TestAgent(1, "O")
         agent_x = TestAgent(-1, "X")
         for test_case, expected1, expected2, expected3, expected4 in test_cases:
-            ttt = TicTacToe(agent_x, agent_o, None)
+            ttt = TicTacToe(env=self._env,
+                            settings=self._settings,
+                            x=agent_x,
+                            o=agent_o)
             ttt.import_state(test_case)
             self.assertEqual(ttt.episode_complete(), expected1)
             # verify same but where state is supplied.
@@ -44,16 +78,32 @@ class TestTicTacToe(unittest.TestCase):
         return
 
     def test_2(self):
-        print("Test for environment import / export")
+        self._trace.log().info("Test case for TicTacToe environment import / export")
         test_cases = ("", "1:0", "-1:0", "-1:1",
                       "-1:0~1:2~-1:4~1:6~-1:8",
                       "1:0~-1:1~1:2~-1:3~1:4~-1:5~1:6~-1:7~1:8")
         agent_o = TestAgent(1, "O")
         agent_x = TestAgent(-1, "X")
         for test_case in test_cases:
-            ttt = TicTacToe(agent_x, agent_o, None)
+            ttt = TicTacToe(env=self._env,
+                            settings=self._settings,
+                            x=agent_x,
+                            o=agent_o)
             ttt.import_state(test_case)
             self.assertEqual(ttt.export_state(), test_case)
+
+    def test_scripted_win(self):
+        """
+        The TestAgents have scripted actions that result in a Win for X
+        """
+        agent_x = TestAgent(-1, "X", [0, 2, 6, 3])
+        agent_o = TestAgent(1, "O", [8, 1, 4])
+        ttt = TicTacToe(env=self._env,
+                        settings=self._settings,
+                        x=agent_x,
+                        o=agent_o)
+        ttt.run(num_episodes=1)
+        return
 
     def test_tic_tac_toe_state(self):
         ao = TestAgent(1, "O")
@@ -105,3 +155,7 @@ class TestTicTacToe(unittest.TestCase):
                 if vl != vr:
                     return False
         return True
+
+
+if __name__ == "__main__":
+    unittest.main()

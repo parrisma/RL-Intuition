@@ -4,7 +4,7 @@ from src.reflrn.interface.state import State
 
 
 #
-# This is an interface specification for an reinforcement learning agent
+# This is an interface specification for a reinforcement learning agent
 #
 
 
@@ -48,7 +48,7 @@ class Agent(metaclass=abc.ABCMeta):
         pass
 
     #
-    # Environment call back when episode is completed
+    # Environment call back when episode reaches a terminal state
     #
     @abc.abstractmethod
     def episode_complete(self, state: State):

@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Dict
 from random import randint
 
 import numpy as np
@@ -8,12 +8,31 @@ from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
 from src.lib.envboot.env import Env
+from src.interface.envbuilder import EnvBuilder
+from src.lib.settings import Settings
+from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
+from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
 
 
 class TicTacToe(Environment):
     # There are 5812 legal board states that can be reached before there is a winner
     # http://brianshourd.com/posts/2012-11-06-tilt-number-of-tic-tac-toe-boards.html
+    __env: Env
+    __trace: Trace
+    __settings: Settings
+    __ttt_event_stream: TicTacToeEventStream
+    __session_uuid: str
+    __episode_uuid: str
+    __episode_step: int
+    __board: np.array
+    __last_board: np.array
+    __agent: Agent
+    __last_agent: Agent
+    __x_agent: Agent
+    __o_agent: Agent
+    __next_agent: Dict
+    __agents = Dict
 
     __play = float(-1)  # reward for playing an action
     __draw = float(-10)  # reward for playing to end but no one wins
@@ -33,26 +52,35 @@ class TicTacToe(Environment):
     attribute_board = (
         "board", "The game board as a numpy array (3,3), np.nan => no move else the id of the agent", np.array)
     __episode = 'episode number'
-    __random_turns = True
 
     #
     # Constructor has no arguments as it just sets the game
     # to an initial up-played set-up
     #
-    def __init__(self, x: Agent,
+    def __init__(self,
+                 env: Env,
+                 settings: Settings,
+                 x: Agent,
                  o: Agent):
-        self._env = Env()
-        self._trace = self._env.get_trace()
-
+        """
+        Establish TicTacToe environment with both Agents ready to play
+        :param env: The Environment to attach to
+        :param x: The Agent to play the X role
+        :param o: The Agent to play to O role
+        """
         self.__session_uuid = None
-        self.__reset_session()
+        self.__episode_uuid = None
+        self.__episode_step = None
 
+        self.__env = env
+        self.__trace = self.__env.get_trace()
+
+        self.__settings = settings
+        self.__ttt_event_stream = None
         self.__board = None
         self.__last_board = None
         self.__agent = None
         self.__last_agent = None
-        self.__episode_uuid = None
-        self.new_episode()
 
         self.__x_agent = x
         self.__o_agent = o
@@ -62,50 +90,91 @@ class TicTacToe(Environment):
         self.__agents = dict()
         self.__agents[self.__o_agent.id()] = self.__o_agent
         self.__agents[self.__x_agent.id()] = self.__x_agent
+
+        self.__start_session()
         return
 
-    #
-    # Return game to initial curr_coords, where no one has played
-    # and the board contains no moves.
-    #
-    def new_episode(self) -> Tuple[State, Agent]:
+    def __del__(self):
+        """
+        Ensure episode and sessions are closed before exit
+        :return:
+        """
+        self.__episode_end()
+        self.__end_session()
+        return
+
+    def episode_start(self) -> Tuple[State, Agent]:
+        """
+        Establish internal state to be that as at start of new Episode. If an existing Episode is in progress that
+        Episode will be formally closed out.
+        :return:
+        """
+        if self.__session_uuid is None:
+            raise RuntimeError("Episode cannot be started outside of an active session")
         if self.__episode_uuid is not None:
-            self._trace.log().debug("End Episode [{}]".format(self.__episode_uuid))
+            self.__episode_end()
+
+        self.__episode_uuid = UniqueRef().ref
+        self.__episode_step = 0
         self.__board = TicTacToe.__empty_board()
         self.__last_board = None
         self.__agent = TicTacToe.__no_agent
         self.__last_agent = TicTacToe.__no_agent
         self.__episode_uuid = UniqueRef().ref
-        self._trace.log().debug("Start Episode [{}]".format(self.__episode_uuid))
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
         self.__x_agent.episode_init(state)
         self.__o_agent.episode_init(state)
         agent = (self.__x_agent, self.__o_agent)[randint(0, 1)]
         return state, agent
 
-    #
-    # Reset the session uuid.
-    #
-    def __reset_session(self) -> None:
-        if self.__session_uuid is not None:
-            self._trace.log().debug("End Session [{}]".format(self.__session_uuid))
-        self.__session_uuid = UniqueRef().ref
-        self._trace.log().debug("Start Session [{}]".format(self.__session_uuid))
+    def __episode_end(self) -> None:
+        """
+        End the current episode.
+        """
+        if self.__episode_uuid is not None:
+            self.__trace.log().debug("End Episode [{}]".format(self.__episode_uuid))
+            self.__episode_uuid = None
+            self.__episode_step = 0
         return
 
-    #
-    # Run the given number of episodes
-    #
-    def run(self, num_episodes: int):
+    def __end_session(self) -> None:
+        """
+        End the current session
+        """
+        if self.__session_uuid is not None:
+            self.__trace.log().debug("End Session [{}]".format(self.__session_uuid))
+            self.__episode_end()
+            self.__session_uuid = None
+        return
+
+    def __start_session(self) -> None:
+        """
+        Start a new session
+        """
+        self.__end_session()
+        self.__session_uuid = UniqueRef().ref
+        self.__trace.log().debug("Start Session [{}]".format(self.__session_uuid))
+        self.__ttt_event_stream = TicTacToeEventStream(
+            es=self.__env.get_context()[EnvBuilder.ElasticDbConnectionContext],
+            es_index=self.__settings.ttt_event_index_name,
+            state_type=TicTacToeState,
+            session_uuid=self.__session_uuid)
+        return
+
+    def run(self, num_episodes: int) -> None:
+        """
+        Play the given number of episodes with the Agents supplied as part of class Init. Select a random Agent
+        to go at the start of each episode.
+        :param num_episodes: The number of episodes to play
+        """
         i = 0
-        self.__reset_session()
         while i <= num_episodes:
-            state, agent = self.new_episode()
+            state, agent = self.episode_start()
             while not self.episode_complete():
                 agent = self.__play_action(agent)
                 i += 1
                 if i % 500 == 0:
-                    self._trace.log().debug("Iteration: " + str(i))
+                    self.__trace.log().debug("Iteration: " + str(i))
 
             state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
             self.__x_agent.episode_complete(state)
@@ -114,82 +183,120 @@ class TicTacToe(Environment):
         self.__o_agent.terminate()
         return
 
-    #
-    # Return a new empty board.
-    #
     @classmethod
     def __empty_board(cls):
+        """
+        Return an empty board
+        :return: an empty bpard as numpy array
+        """
         return np.full((3, 3), np.nan)
 
     @classmethod
     def no_agent(cls):
         return cls.__no_agent
 
-    #
-    # Return the actions as a list of integers. If no state is given return the list of all
-    # action else return the list of actions valid in this state.
-    #
     @classmethod
     def actions(cls,
                 state: State = None) -> dict:
-
+        """
+        Return the actions as a list of integers. If no state is given return the list of all
+        action else return the list of actions valid in this state.
+        :param state: The (optional) state to return actions for, if not given use current internal state
+        :return: Dictionary of actions & action values.
+        """
         if state is None:
             return TicTacToe.__actions
         else:
             return np.array(list(TicTacToe.__actions.keys()))[np.isnan(state.state()).reshape(9)]
 
-    #
-    # Assume the play_action has been validated by play_action method
-    # Make a deep_copy of board before play_action is made and the last player
-    #
-    def __take_action(self, action: int, agent: Agent):
+    def __take_action(self, action: int, agent: Agent) -> None:
+        """
+        Assume the play_action has been validated by play_action method
+        Make a deep_copy of board before play_action is made and the last player
+        :param action: The action to play
+        :param agent: The Agent playing teh action
+        """
+        self.__episode_step += 1
         self.__last_board = np.copy(self.__board)
         self.__last_agent = self.__agent
         self.__agent = agent
         self.__board[self.__actions[action]] = self.__agent.id()
         return
 
-    #
-    # Make the play chosen by the given agent. If it is a valid play
-    # confer reward and switch play to other agent. If invalid play
-    # i.e. play in a cell where there is already a marker confer
-    # penalty and leave play with the same agent.
-    # ToDo
+    def __assign_reward(self,
+                        action: int,
+                        state: State,
+                        next_state: State,
+                        agent: Agent,
+                        other_agent: Agent) -> None:
+        """
+        Assign a reward to the agent for the given action that was just played
+        :param action: The action just played
+        :param state: The state before the action
+        :param next_state: The state after the action
+        :param agent: The agent that played the action
+        :param other_agent: The agent the action was played against
+        """
+        episode_end = False
+        reward = self.__play
+        episode_outcome = TicTacToeEventStream.TicTacToeEvent.STEP
+        if self.episode_complete():
+            episode_end = True
+            attributes = self.attributes()
+            if attributes[self.attribute_won[0]]:
+                reward = self.__win
+                if agent == self.__x_agent:
+                    episode_outcome = TicTacToeEventStream.TicTacToeEvent.X_WIN
+                else:
+                    episode_outcome = TicTacToeEventStream.TicTacToeEvent.O_WIN
+            if attributes[self.attribute_draw[0]]:
+                reward = self.__draw
+                episode_outcome = TicTacToeEventStream.TicTacToeEvent.DRAW
+
+        agent.reward(state, next_state, action, reward, episode_end)
+        self.__ttt_event_stream.record_event(episode_uuid=self.__episode_uuid,
+                                             episode_step=self.__episode_step,
+                                             state=state,
+                                             action="{}".format(action),
+                                             reward=reward,
+                                             episode_end=episode_end,
+                                             episode_outcome=episode_outcome)
+        return
+
     def __play_action(self, agent: Agent) -> Agent:
+        """
+        Make the play chosen by the given agent. If it is a valid play
+        confer reward and switch play to other agent. If invalid play
+        i.e. play in a cell where there is already a marker confer
+        penalty and leave play with the same agent.
+
+        :param agent: The Agent to play the next move
+        :return: The Agent that will play next
+        """
 
         other_agent = self.__next_agent[agent.name()]
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
 
         # Make the play on the board.
-        self._trace.log().debug(state.state_as_array())
+        self.__trace.log().debug(state.state_as_string())
         action = agent.choose_action(state, self.__actions_ids_left_to_take())
         if action not in self.__actions_ids_left_to_take():
             raise TicTacToe.IllegalActorAction("Actor Proposed Illegal action in current state :" + str(action))
         self.__take_action(action, agent)
         next_state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
 
-        if self.episode_complete():
-            attributes = self.attributes()
-            if attributes[self.attribute_won[0]]:
-                agent.reward(state, next_state, action, self.__win, True)
-                other_agent.reward(state, next_state, action, self.__win, False)  # block not win
-                si = state.invert_player_perspective()
-                nsi = next_state.invert_player_perspective()
-                agent.reward(si, nsi, action, self.__win, False)  # block not win
-                other_agent.reward(si, nsi, action, self.__win, True)
-                return None  # episode complete - no next agent to go
-            if attributes[self.attribute_draw[0]]:
-                agent.reward(state, next_state, action, self.__draw, True)
-                other_agent.reward(state, next_state, action, self.__draw, True)
-                return None  # episode complete - no next agent to go
-
-        agent.reward(state, next_state, action, self.__play, False)
+        self.__assign_reward(action=action,
+                             state=state,
+                             next_state=next_state,
+                             agent=agent,
+                             other_agent=other_agent)
         return other_agent  # play moves to next agent
 
-    #
-    # Return the attributes of the environment
-    #
     def attributes(self):
+        """
+        The attributes of the current game state
+        :return: Dictionary of attributes and their current values.
+        """
         attr_dict = dict()
         attr_dict[TicTacToe.attribute_won[0]] = self.__episode_won()
         attr_dict[TicTacToe.attribute_draw[0]] = False
@@ -201,11 +308,13 @@ class TicTacToe(Environment):
         attr_dict[TicTacToe.attribute_board[0]] = np.copy(self.__board)
         return attr_dict
 
-    #
-    # Is there a winning move on the board.
-    #
     def __episode_won(self,
                       board=None) -> bool:
+        """
+        Return True if the current board has a winning row on it.
+        :param board: If supplied return based on given board else use the internal board state
+        :return: True if board has a winning move on it.
+        """
         if board is None:
             board = self.__board
         rows = np.abs(np.sum(board, axis=1))
@@ -225,34 +334,37 @@ class TicTacToe(Environment):
                 return True
         return False
 
-    #
-    # Are there any remaining actions to be taken
-    #
     def __actions_left_to_take(self,
-                               board=None):
+                               board=None) -> bool:
+        """
+        Return True if there are any actions left to take given the current board state
+        :param board: If supplied return based on given board else use the internal board state
+        :return: True if actions remain on board
+        """
         if board is None:
             board = self.__board
         return board[np.isnan(board)].size > 0
 
-    #
-    # Are there any remaining actions to be taken >
-    #
     def __actions_ids_left_to_take(self,
-                                   board=None):
+                                   board=None) -> np.array:
+        """
+        The possible game actions remaining given the board state
+        :param board: If given the actions for the given board else return actions for internal board state
+        :return: The actions as a Numpy array of int
+        """
         if board is None:
             board = self.__board
         alt = np.reshape(board, board.size)
         alt = np.fromiter(self.actions().keys(), int)[np.isnan(alt)]
         return alt
 
-    #
-    # The episode is over if one agent has made a line of three on
-    # any horizontal, vertical or diagonal or if there are no actions
-    # left to take and neither agent has won.
-    #
     def episode_complete(self,
-                         state: State = None):
-
+                         state: State = None) -> bool:
+        """
+        Return True if the given game state represents a terminal game state
+        :param state:
+        :return:
+        """
         board = None
         if state is not None:
             board = state.state()
@@ -261,11 +373,12 @@ class TicTacToe(Environment):
             return True
         return False
 
-    #
-    # Convert an environment (board) from a string form to the
-    # internal board curr_coords.
-    #
     def __string_to_internal_state(self, moves_as_str):
+        """
+        Establih current game state to matach that of teh given structured text string
+        :param moves_as_str:
+        :return:
+        """
         mvs = moves_as_str.split('~')
         if moves_as_str is not None:
             for mv in mvs:
@@ -274,10 +387,11 @@ class TicTacToe(Environment):
                     self.__take_action(int(ps), self.__agents[int(pl)])
         return
 
-    #
-    # Convert internal (board) curr_coords to string
-    #
-    def __internal_state_to_string(self, board) -> str:
+    def __internal_state_to_string(self) -> str:
+        """
+        Render the current game state as a structured text string
+        :return: Current game state as structures text that can be parsed
+        """
         mvs = ""
         bd = np.reshape(self.__board, self.__board.size)
         cell_num = 0
@@ -289,34 +403,46 @@ class TicTacToe(Environment):
             mvs = mvs[:-1]
         return mvs
 
-    #
-    # The current curr_coords of the environment as string
-    #
     def state_as_str(self) -> str:
-        return self.__internal_state_to_string(self.__board)
+        """
+        The current TicTacToe game state as a string
+        :return: Game state as string
+        """
+        return self.__internal_state_to_string()
 
-    #
-    # Expose current environment curr_coords as string
-    #
-    def export_state(self):
-        return self.__internal_state_to_string(self.__board)
+    def export_state(self) -> str:
+        """
+        The current TicTacToe game state as structured text that can be parsed
+        :return: Game state as structured test string
+        """
+        return self.__internal_state_to_string()
 
-    #
-    # Set environment curr_coords from string
-    #
-    def import_state(self, state_as_string):
+    def import_state(self,
+                     state_as_string: str):
+        """
+        Set game state to that of the structured text string
+        :param state_as_string: The structured text from which to establish the game state
+        :return:
+        """
+        # Must be an open episode
+        if self.__episode_uuid is None:
+            self.episode_start()
         self.__string_to_internal_state(state_as_string)
+        return
 
-    #
-    # Return the State of the environment
-    #
     def state(self) -> State:
+        """
+        The current game state as a State object
+        :return: The current game state as a State object
+        """
         return TicTacToeState(self.__board,
                               self.__x_agent,
                               self.__o_agent)
 
-    # Policy was not linked to an environment before it was used..
-    #
     class IllegalActorAction(Exception):
+        """
+        Given actor was not in correct state to participate in a game
+        """
+
         def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
