@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 from random import randint
 
 import numpy as np
@@ -8,8 +8,6 @@ from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
 from src.lib.envboot.env import Env
-from src.interface.envbuilder import EnvBuilder
-from src.lib.settings import Settings
 from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
@@ -20,7 +18,6 @@ class TicTacToe(Environment):
     # http://brianshourd.com/posts/2012-11-06-tilt-number-of-tic-tac-toe-boards.html
     __env: Env
     __trace: Trace
-    __settings: Settings
     __ttt_event_stream: TicTacToeEventStream
     __session_uuid: str
     __episode_uuid: str
@@ -34,9 +31,9 @@ class TicTacToe(Environment):
     __next_agent: Dict
     __agents = Dict
 
-    __play = float(-1)  # reward for playing an action
-    __draw = float(-10)  # reward for playing to end but no one wins
-    __win = float(100)  # reward for winning a game
+    play_reward = float(-1)  # reward for playing an action
+    draw_reward = float(-10)  # reward for playing to end but no one wins
+    win_reward = float(100)  # reward for winning a game
     __no_agent = None
     __win_mask = np.full((1, 3), 3, np.int8)
     __actions = {0: (0, 0), 1: (0, 1), 2: (0, 2), 3: (1, 0), 4: (1, 1), 5: (1, 2), 6: (2, 0), 7: (2, 1), 8: (2, 2)}
@@ -59,9 +56,10 @@ class TicTacToe(Environment):
     #
     def __init__(self,
                  env: Env,
-                 settings: Settings,
+                 ttt_event_stream: TicTacToeEventStream,
                  x: Agent,
-                 o: Agent):
+                 o: Agent,
+                 x_to_start: bool = None):
         """
         Establish TicTacToe environment with both Agents ready to play
         :param env: The Environment to attach to
@@ -73,10 +71,9 @@ class TicTacToe(Environment):
         self.__episode_step = None
 
         self.__env = env
+        self.__ttt_event_stream = ttt_event_stream
         self.__trace = self.__env.get_trace()
 
-        self.__settings = settings
-        self.__ttt_event_stream = None
         self.__board = None
         self.__last_board = None
         self.__agent = None
@@ -91,6 +88,8 @@ class TicTacToe(Environment):
         self.__agents[self.__o_agent.id()] = self.__o_agent
         self.__agents[self.__x_agent.id()] = self.__x_agent
 
+        self._x_to_start = x_to_start
+
         self.__start_session()
         return
 
@@ -103,7 +102,7 @@ class TicTacToe(Environment):
         self.__end_session()
         return
 
-    def episode_start(self) -> Tuple[State, Agent]:
+    def episode_start(self) -> Tuple[State, Agent, str]:
         """
         Establish internal state to be that as at start of new Episode. If an existing Episode is in progress that
         Episode will be formally closed out.
@@ -124,8 +123,14 @@ class TicTacToe(Environment):
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
         self.__x_agent.episode_init(state)
         self.__o_agent.episode_init(state)
-        agent = (self.__x_agent, self.__o_agent)[randint(0, 1)]
-        return state, agent
+        if self._x_to_start is None:
+            agent = (self.__x_agent, self.__o_agent)[randint(0, 1)]
+        else:
+            if self._x_to_start:
+                agent = self.__x_agent
+            else:
+                agent = self.__o_agent
+        return state, agent, self.__episode_uuid
 
     def __episode_end(self) -> None:
         """
@@ -154,22 +159,19 @@ class TicTacToe(Environment):
         self.__end_session()
         self.__session_uuid = UniqueRef().ref
         self.__trace.log().debug("Start Session [{}]".format(self.__session_uuid))
-        self.__ttt_event_stream = TicTacToeEventStream(
-            es=self.__env.get_context()[EnvBuilder.ElasticDbConnectionContext],
-            es_index=self.__settings.ttt_event_index_name,
-            state_type=TicTacToeState,
-            session_uuid=self.__session_uuid)
         return
 
-    def run(self, num_episodes: int) -> None:
+    def run(self, num_episodes: int) -> List[str]:
         """
         Play the given number of episodes with the Agents supplied as part of class Init. Select a random Agent
         to go at the start of each episode.
         :param num_episodes: The number of episodes to play
         """
+        episodes = list()
         i = 0
-        while i <= num_episodes:
-            state, agent = self.episode_start()
+        while len(episodes) < num_episodes:
+            state, agent, episode_uuid = self.episode_start()
+            episodes.append(episode_uuid)
             while not self.episode_complete():
                 agent = self.__play_action(agent)
                 i += 1
@@ -181,7 +183,7 @@ class TicTacToe(Environment):
             self.__o_agent.episode_complete(state)
         self.__x_agent.terminate()
         self.__o_agent.terminate()
-        return
+        return episodes
 
     @classmethod
     def __empty_board(cls):
@@ -238,19 +240,19 @@ class TicTacToe(Environment):
         :param other_agent: The agent the action was played against
         """
         episode_end = False
-        reward = self.__play
+        reward = self.play_reward
         episode_outcome = TicTacToeEventStream.TicTacToeEvent.STEP
         if self.episode_complete():
             episode_end = True
             attributes = self.attributes()
             if attributes[self.attribute_won[0]]:
-                reward = self.__win
+                reward = self.win_reward
                 if agent == self.__x_agent:
                     episode_outcome = TicTacToeEventStream.TicTacToeEvent.X_WIN
                 else:
                     episode_outcome = TicTacToeEventStream.TicTacToeEvent.O_WIN
             if attributes[self.attribute_draw[0]]:
-                reward = self.__draw
+                reward = self.draw_reward
                 episode_outcome = TicTacToeEventStream.TicTacToeEvent.DRAW
 
         agent.reward(state, next_state, action, reward, episode_end)

@@ -12,6 +12,7 @@ from src.lib.envboot.runspec import RunSpec
 from src.lib.elastic.esutil import ESUtil
 from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
 from src.test.state.dummy_state import DummyState
+from src.test.ttt_event_stream.DummyStateFactory import DummyStateFactory
 
 
 class TestTTTEventStream(unittest.TestCase):
@@ -22,6 +23,7 @@ class TestTTTEventStream(unittest.TestCase):
     _run_spec: RunSpec
     _es: Elasticsearch
     _sess_uuid: str
+    _state_factory: DummyStateFactory
 
     _run = int(0)
     _trace = None
@@ -42,6 +44,8 @@ class TestTTTEventStream(unittest.TestCase):
         cls._settings = Settings(settings_yaml_stream=WebStream(cls._run_spec.ttt_settings_yaml()),
                                  bespoke_transforms=cls._run_spec.setting_transformers())
         cls._sess_uuid = UniqueRef().ref
+        cls._state_factory = DummyStateFactory()
+
         return
 
     def setUp(self) -> None:
@@ -52,7 +56,7 @@ class TestTTTEventStream(unittest.TestCase):
 
     def tearDown(self) -> None:
         """
-        1. Delete all documents added for the test session uuid
+        Delete all documents added for the test session uuid
         """
         self._trace.log().info("- - - - - - C A S E {} Passed - - - - - -".format(TestTTTEventStream._run))
 
@@ -70,7 +74,7 @@ class TestTTTEventStream(unittest.TestCase):
         """
         tttes = TicTacToeEventStream(es=TestTTTEventStream._es,
                                      es_index=TestTTTEventStream._settings.ttt_event_index_name,
-                                     state_type=DummyState,
+                                     state_factory=self._state_factory,
                                      session_uuid=TestTTTEventStream._sess_uuid)
         tttes.record_event(episode_uuid=UniqueRef().ref,
                            episode_step=1,
@@ -96,7 +100,7 @@ class TestTTTEventStream(unittest.TestCase):
         """
         tttes = TicTacToeEventStream(es=TestTTTEventStream._es,
                                      es_index=TestTTTEventStream._settings.ttt_event_index_name,
-                                     state_type=DummyState,
+                                     state_factory=self._state_factory,
                                      session_uuid=TestTTTEventStream._sess_uuid)
         episode_id = UniqueRef().ref
         evnts = list()

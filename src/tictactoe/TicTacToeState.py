@@ -114,16 +114,20 @@ class TicTacToeState(State):
         """
         Set the board state from the string. Where the string is 9 chars long as a sequence of id's for actors
         with [.] for an un played cell. There is no validation applied to the given board state
-        :param state_as_str:
-        :return:
+        :param state_as_str: State in string from to inti from.
         """
         new_board = np.zeros(9)
         i = 0
+        f = 1
         for c in state_as_str:
             if c == '.':
                 new_board[i] = np.nan
+            elif c == "-":
+                f = -1
+                i -= 1
             else:
-                new_board[i] = int(c)
+                new_board[i] = int(c) * f
+                f = 1
             i += 1
         self.board = new_board.reshape((3, 3))
         return

@@ -2,6 +2,7 @@ from typing import List
 from datetime import datetime
 from elasticsearch import Elasticsearch
 from src.reflrn.interface.state import State
+from src.reflrn.interface.state_factory import StateFactory
 from src.lib.elastic.esutil import ESUtil
 
 
@@ -55,7 +56,7 @@ class TicTacToeEventStream:
     # --- TicTacToeEventStream --
     _es: Elasticsearch
     _session_uuid: str
-    _state_type: type
+    _state_factory: StateFactory
     _jflds: List
 
     _jflds = ["timestamp",
@@ -74,14 +75,14 @@ class TicTacToeEventStream:
     def __init__(self,
                  es: Elasticsearch,
                  es_index: str,
-                 state_type: type,
+                 state_factory: StateFactory,
                  session_uuid: str):
         self._es = es
         if ESUtil.index_exists(es=es, idx_name=es_index):
             self._es_index = es_index
         else:
             raise RuntimeError("Cannot create TicTacToeEventStream as index {} does not exist".format(es_index))
-        self._state_type = state_type
+        self._state_factory = state_factory
         self._session_uuid = session_uuid
         self._fmt = '{{{{"{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}","{}":"{{}}"}}}}'
         self._fmt = self._fmt.format(*self._jflds)
@@ -142,8 +143,7 @@ class TicTacToeEventStream:
             res = list()
             for jer in ttt_events_as_json:
                 je = jer['_source']
-                st = self._state_type()
-                st.state_from_string(je['state'])
+                st = self._state_factory.new_state(je['state'])
                 ttt_e = TicTacToeEventStream.TicTacToeEvent(episode_uuid=je['episode_uuid'],
                                                             episode_step=int(je['episode_step']),
                                                             state=st,
