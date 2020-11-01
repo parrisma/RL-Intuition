@@ -90,7 +90,7 @@ class TicTacToe(Environment):
 
         self._x_to_start = x_to_start
 
-        self.__start_session()
+        self.__session_start()
         return
 
     def __del__(self):
@@ -99,7 +99,7 @@ class TicTacToe(Environment):
         :return:
         """
         self.__episode_end()
-        self.__end_session()
+        self.__session_end()
         return
 
     def episode_start(self) -> Tuple[State, Agent, str]:
@@ -114,12 +114,12 @@ class TicTacToe(Environment):
             self.__episode_end()
 
         self.__episode_uuid = UniqueRef().ref
+        self.__trace.log().info("Start Episode [{}]".format(self.__episode_uuid))
         self.__episode_step = 0
         self.__board = TicTacToe.__empty_board()
         self.__last_board = None
         self.__agent = TicTacToe.__no_agent
         self.__last_agent = TicTacToe.__no_agent
-        self.__episode_uuid = UniqueRef().ref
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
         self.__x_agent.episode_init(state)
         self.__o_agent.episode_init(state)
@@ -137,28 +137,28 @@ class TicTacToe(Environment):
         End the current episode.
         """
         if self.__episode_uuid is not None:
-            self.__trace.log().debug("End Episode [{}]".format(self.__episode_uuid))
+            self.__trace.log().info("End Episode [{}]".format(self.__episode_uuid))
             self.__episode_uuid = None
             self.__episode_step = 0
         return
 
-    def __end_session(self) -> None:
+    def __session_end(self) -> None:
         """
         End the current session
         """
         if self.__session_uuid is not None:
-            self.__trace.log().debug("End Session [{}]".format(self.__session_uuid))
+            self.__trace.log().info("End Session [{}]".format(self.__session_uuid))
             self.__episode_end()
             self.__session_uuid = None
         return
 
-    def __start_session(self) -> None:
+    def __session_start(self) -> None:
         """
         Start a new session
         """
-        self.__end_session()
+        self.__session_end()
         self.__session_uuid = UniqueRef().ref
-        self.__trace.log().debug("Start Session [{}]".format(self.__session_uuid))
+        self.__trace.log().info("Start Session [{}]".format(self.__session_uuid))
         return
 
     def run(self, num_episodes: int) -> List[str]:
@@ -176,7 +176,7 @@ class TicTacToe(Environment):
                 agent = self.__play_action(agent)
                 i += 1
                 if i % 500 == 0:
-                    self.__trace.log().debug("Iteration: " + str(i))
+                    self.__trace.log().info("Iteration: " + str(i))
 
             state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
             self.__x_agent.episode_complete(state)
@@ -280,7 +280,6 @@ class TicTacToe(Environment):
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
 
         # Make the play on the board.
-        self.__trace.log().debug(state.state_as_string())
         action = agent.choose_action(state, self.__actions_ids_left_to_take())
         if action not in self.__actions_ids_left_to_take():
             raise TicTacToe.IllegalActorAction("Actor Proposed Illegal action in current state :" + str(action))

@@ -83,7 +83,7 @@ class TestTicTacToe(unittest.TestCase):
                 self.assertEqual(episode_summary[TicTacToe.attribute_agent[0]].id(), expected4)
             else:
                 self.assertEqual(episode_summary[TicTacToe.attribute_agent[0]], expected4)
-
+            del ttt
         return
 
     def test_2(self):
@@ -100,22 +100,26 @@ class TestTicTacToe(unittest.TestCase):
                             o=agent_o)
             ttt.import_state(test_case)
             self.assertEqual(ttt.export_state(), test_case)
+            del ttt
+        return
 
     def test_scripted_win(self):
         """
-        The TestAgents have scripted actions that result in a Win for X
+        The TestAgents have scripted actions that result in a Win for X and Win for O
         """
         cases = [
-            [TestAgent(-1, "O", [0, 2, 6, 3]), TestAgent(1, "X", [8, 1, 4]), TicTacToeEventStream.TicTacToeEvent.O_WIN],
-            [TestAgent(1, "X", [0, 2, 6, 3]), TestAgent(-1, "O", [8, 1, 4]), TicTacToeEventStream.TicTacToeEvent.X_WIN]
+            [TestAgent(-1, "X", [0, 2, 6, 3]), TestAgent(1, "O", [8, 1, 4]),
+             TicTacToeEventStream.TicTacToeEvent.X_WIN, True],
+            [TestAgent(-1, "X", [8, 1, 4]), TestAgent(1, "O", [0, 2, 6, 3]),
+             TicTacToeEventStream.TicTacToeEvent.O_WIN, False]
         ]
         for case in cases:
-            agent_x, agent_o, res = case
+            agent_x, agent_o, res, x_to_start = case
             ttt = TicTacToe(env=self._env,
                             ttt_event_stream=self.__ttt_event_stream,
                             x=agent_x,
                             o=agent_o,
-                            x_to_start=True)
+                            x_to_start=x_to_start)
             episodes = ttt.run(num_episodes=1)
             self.assertEqual(1, len(episodes))
             events = self.__ttt_event_stream.get_episode(episode_uuid=episodes[0])
@@ -131,11 +135,62 @@ class TestTicTacToe(unittest.TestCase):
                 step, state_as_str, action, reward, end, outcome = expected
                 self.assertEqual(episodes[0], event.episode_uuid)
                 self.assertEqual(step, event.episode_step)
-                self.assertEqual(state_as_str, event.state.state_as_string())
+                if not x_to_start:
+                    st = event.state.invert_player_perspective()
+                else:
+                    st = event.state
+                self.assertEqual(state_as_str, st.state_as_string())
                 self.assertEqual(str(action), event.action)
                 self.assertEqual(reward, event.reward)
                 self.assertEqual(end, event.episode_end)
                 self.assertEqual(outcome, event.episode_outcome)
+            del ttt
+        return
+
+    def test_scripted_draw(self):
+        """
+        The TestAgents have scripted actions that result in a Draw with both open from X and O
+        """
+        cases = [
+            [TestAgent(-1, "X", [0, 2, 3, 7, 8]), TestAgent(1, "O", [1, 4, 5, 6]),
+             TicTacToeEventStream.TicTacToeEvent.DRAW, True],
+            [TestAgent(-1, "X", [1, 4, 5, 6]), TestAgent(1, "O", [0, 2, 3, 7, 8]),
+             TicTacToeEventStream.TicTacToeEvent.DRAW, False]
+        ]
+        for case in cases:
+            agent_x, agent_o, res, x_to_start = case
+            ttt = TicTacToe(env=self._env,
+                            ttt_event_stream=self.__ttt_event_stream,
+                            x=agent_x,
+                            o=agent_o,
+                            x_to_start=x_to_start)
+            episodes = ttt.run(num_episodes=1)
+            self.assertEqual(1, len(episodes))
+            events = self.__ttt_event_stream.get_episode(episode_uuid=episodes[0])
+            expected_results = [
+                [1, '000000000', 0, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [2, '-100000000', 1, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [3, '-110000000', 2, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [4, '-11-1000000', 4, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [5, '-11-1010000', 3, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [6, '-11-1-110000', 5, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [7, '-11-1-111000', 7, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [8, '-11-1-1110-10', 6, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
+                [9, '-11-1-1111-10', 8, TicTacToe.draw_reward, True, res]]
+            for event, expected in zip(events, expected_results):
+                step, state_as_str, action, reward, end, outcome = expected
+                self.assertEqual(episodes[0], event.episode_uuid)
+                self.assertEqual(step, event.episode_step)
+                if not x_to_start:
+                    st = event.state.invert_player_perspective()
+                else:
+                    st = event.state
+                self.assertEqual(state_as_str, st.state_as_string())
+                self.assertEqual(str(action), event.action)
+                self.assertEqual(reward, event.reward)
+                self.assertEqual(end, event.episode_end)
+                self.assertEqual(outcome, event.episode_outcome)
+            del ttt
         return
 
     def test_tic_tac_toe_state(self):
