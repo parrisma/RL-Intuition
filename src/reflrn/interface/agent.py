@@ -9,6 +9,15 @@ from src.reflrn.interface.state import State
 
 
 class Agent(metaclass=abc.ABCMeta):
+    X_ID: int
+    O_ID: int
+    X_NAME: str
+    O_NAME: str
+
+    X_ID = -1
+    O_ID = 1
+    X_NAME = "X"
+    O_NAME = "O"
 
     #
     # Immutable Id for the Agent

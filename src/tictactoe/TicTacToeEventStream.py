@@ -89,6 +89,14 @@ class TicTacToeEventStream:
         self._date_formatter = ESUtil.DefaultElasticDateFormatter()
         return
 
+    @property
+    def session_uuid(self) -> str:
+        """
+        Get the session uuid of the event stream
+        :return: The session uuid of the event stream
+        """
+        return self._session_uuid
+
     def record_event(self,
                      episode_uuid: str,
                      episode_step: int,

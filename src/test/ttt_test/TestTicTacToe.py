@@ -44,7 +44,7 @@ class TestTicTacToe(unittest.TestCase):
         cls.__ttt_event_stream = TicTacToeEventStream(es=cls._es,
                                                       es_index=cls._settings.ttt_event_index_name,
                                                       state_factory=cls._state_factory,
-                                                      session_uuid=UniqueRef.ref)
+                                                      session_uuid=UniqueRef().ref)
         return
 
     def setUp(self) -> None:

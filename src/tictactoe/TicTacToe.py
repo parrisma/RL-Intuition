@@ -157,7 +157,7 @@ class TicTacToe(Environment):
         Start a new session
         """
         self.__session_end()
-        self.__session_uuid = UniqueRef().ref
+        self.__session_uuid = self.__ttt_event_stream.session_uuid # inherit same session uuid as event stream
         self.__trace.log().info("Start Session [{}]".format(self.__session_uuid))
         return
 
