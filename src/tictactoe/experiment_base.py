@@ -22,7 +22,7 @@ class ExperimentBase(Experiment):
     _agent_o: Agent
     _ttt_event_stream: TicTacToeEventStream
     _ttt: TicTacToe
-    _session_uuid:str
+    _session_uuid: str
 
     _trace = None
     _env = None

@@ -13,6 +13,7 @@ from src.lib.elastic.esutil import ESUtil
 from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
 from src.test.state.dummy_state import DummyState
 from src.test.ttt_event_stream.DummyStateFactory import DummyStateFactory
+from src.tictactoe.tictacttoe_event import TicTacToeEvent
 
 
 class TestTTTEventStream(unittest.TestCase):
@@ -82,7 +83,7 @@ class TestTTTEventStream(unittest.TestCase):
                            action="1",
                            reward=3.142,
                            episode_end=True,
-                           episode_outcome=TicTacToeEventStream.TicTacToeEvent.STEP)
+                           episode_outcome=TicTacToeEvent.STEP)
 
         TestTTTEventStream._es.indices.flush(index=TestTTTEventStream._settings.ttt_event_index_name)
         time.sleep(1)
@@ -105,24 +106,24 @@ class TestTTTEventStream(unittest.TestCase):
         episode_id = UniqueRef().ref
         evnts = list()
         num_to_test = 10
-        outcomes = [TicTacToeEventStream.TicTacToeEvent.X_WIN,
-                    TicTacToeEventStream.TicTacToeEvent.O_WIN,
-                    TicTacToeEventStream.TicTacToeEvent.DRAW]
+        outcomes = [TicTacToeEvent.X_WIN,
+                    TicTacToeEvent.O_WIN,
+                    TicTacToeEvent.DRAW]
 
         for i in range(0, num_to_test, 1):
             eend = (i == num_to_test - 1)
             if eend:
                 outc = outcomes[np.random.randint(3)]
             else:
-                outc = TicTacToeEventStream.TicTacToeEvent.STEP
+                outc = TicTacToeEvent.STEP
 
-            ttt_e = TicTacToeEventStream.TicTacToeEvent(episode_uuid=episode_id,
-                                                        episode_step=i,
-                                                        state=DummyState(),
-                                                        action=str(np.random.randint(100)),
-                                                        reward=np.random.random(),
-                                                        episode_end=eend,
-                                                        episode_outcome=outc)
+            ttt_e = TicTacToeEvent(episode_uuid=episode_id,
+                                   episode_step=i,
+                                   state=DummyState(),
+                                   action=str(np.random.randint(100)),
+                                   reward=np.random.random(),
+                                   episode_end=eend,
+                                   episode_outcome=outc)
             tttes.record_event(episode_uuid=ttt_e.episode_uuid,
                                episode_step=ttt_e.episode_step,
                                state=ttt_e.state,
@@ -135,11 +136,10 @@ class TestTTTEventStream(unittest.TestCase):
         TestTTTEventStream._es.indices.flush(index=TestTTTEventStream._settings.ttt_event_index_name)
         time.sleep(1)
 
-        res = tttes.get_episode(episode_uuid=episode_id)
+        res = tttes.get_session(session_uuid=tttes.session_uuid)
 
         self.assertEqual(len(evnts), len(res))
 
-        res = sorted(res, key=lambda x: x.episode_step)
         evnts = sorted(evnts, key=lambda x: x.episode_step)
 
         for expected, actual in zip(evnts, res):

@@ -4,55 +4,10 @@ from elasticsearch import Elasticsearch
 from src.reflrn.interface.state import State
 from src.reflrn.interface.state_factory import StateFactory
 from src.lib.elastic.esutil import ESUtil
+from src.tictactoe.tictacttoe_event import TicTacToeEvent
 
 
 class TicTacToeEventStream:
-    class TicTacToeEvent:
-        episode_uuid: str
-        episode_step: int
-        state: State
-        action: str
-        reward: float
-        episode_end: bool
-        episode_outcome: str
-
-        X_WIN = "x-win"
-        O_WIN = "o-win"
-        DRAW = "draw"
-        STEP = "step"
-
-        def __init__(self,
-                     episode_uuid: str,
-                     episode_step: int,
-                     state: State,
-                     action: str,
-                     reward: float,
-                     episode_end: bool,
-                     episode_outcome):
-            self.episode_uuid = episode_uuid
-            self.episode_step = episode_step
-            self.state = state
-            self.action = action
-            self.reward = reward
-            self.episode_end = episode_end
-            self.episode_outcome = episode_outcome
-            return
-
-        def __eq__(self, other):
-            return (
-                    self.__class__ == other.__class__ and
-                    self.episode_uuid == other.episode_uuid and
-                    self.episode_end == other.episode_end and
-                    self.state == other.state and
-                    self.action == other.action and
-                    self.reward == other.reward and
-                    self.episode_end == other.episode_end and
-                    self.episode_outcome == other.episode_outcome
-            )
-
-        def __hash__(self):
-            return hash(self)
-
     # --- TicTacToeEventStream --
     _es: Elasticsearch
     _session_uuid: str
@@ -136,32 +91,35 @@ class TicTacToeEventStream:
 
         return
 
-    def get_episode(self,
-                    episode_uuid: str) -> List['TicTacToeEventStream.TicTacToeEvent']:
+    def get_session(self,
+                    session_uuid: str) -> List['TicTacToeEvent']:
         """
-        return all events for the given episode_uuid
-        :param episode_uuid: The uuid of the episode to get
-        :return: A list of TicTacToe Events for the given episode_uuid
+        return all events for the given session_uuid
+        :param session_uuid: The uuid of the session to get
+        :return: A list of TicTacToe Events for the given session_uuid
         """
         try:
             ttt_events_as_json = ESUtil.run_search(es=self._es,
                                                    idx_name=self._es_index,
-                                                   json_query=self.EPISODE_UUID_Q,
-                                                   arg0=episode_uuid)
+                                                   json_query=self.SESSION_UUID_Q,
+                                                   arg0=session_uuid)
             res = list()
             for jer in ttt_events_as_json:
-                je = jer['_source']
-                st = self._state_factory.new_state(je['state'])
-                ttt_e = TicTacToeEventStream.TicTacToeEvent(episode_uuid=je['episode_uuid'],
-                                                            episode_step=int(je['episode_step']),
-                                                            state=st,
-                                                            action=je['action'],
-                                                            reward=float(je['reward']),
-                                                            episode_end=bool('true' == je['episode_end']),
-                                                            episode_outcome=je['episode_outcome']
-                                                            )
+                event_as_json = jer['_source']
+                st = self._state_factory.new_state(event_as_json['state'])
+                ttt_e = TicTacToeEvent(episode_uuid=event_as_json['episode_uuid'],
+                                       episode_step=int(event_as_json['episode_step']),
+                                       state=st,
+                                       action=event_as_json['action'],
+                                       reward=float(event_as_json['reward']),
+                                       episode_end=bool('true' == event_as_json['episode_end']),
+                                       episode_outcome=event_as_json['episode_outcome']
+                                       )
                 res.append(ttt_e)
         except Exception as e:
             raise RuntimeError(
-                "Get episode failed with exception [{}]".format(str(e)))
+                "Get session failed with exception [{}]".format(str(e)))
+
+        # Always return sorted in uuid & step order.
+        res = sorted(res, key=lambda x: "{}{}".format(x.episode_uuid, x.episode_step))
         return res

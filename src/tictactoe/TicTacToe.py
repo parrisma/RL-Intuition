@@ -9,6 +9,7 @@ from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
 from src.lib.envboot.env import Env
 from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.tictacttoe_event import TicTacToeEvent
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
 
@@ -157,7 +158,7 @@ class TicTacToe(Environment):
         Start a new session
         """
         self.__session_end()
-        self.__session_uuid = self.__ttt_event_stream.session_uuid # inherit same session uuid as event stream
+        self.__session_uuid = self.__ttt_event_stream.session_uuid  # inherit same session uuid as event stream
         self.__trace.log().info("Start Session [{}]".format(self.__session_uuid))
         return
 
@@ -174,7 +175,7 @@ class TicTacToe(Environment):
             episodes.append(episode_uuid)
             while not self.episode_complete():
                 agent = self.__play_action(agent)
-                i += 1
+                i = len(episodes)
                 if i % 500 == 0:
                     self.__trace.log().info("Iteration: " + str(i))
 
@@ -241,19 +242,19 @@ class TicTacToe(Environment):
         """
         episode_end = False
         reward = self.play_reward
-        episode_outcome = TicTacToeEventStream.TicTacToeEvent.STEP
+        episode_outcome = TicTacToeEvent.STEP
         if self.episode_complete():
             episode_end = True
             attributes = self.attributes()
             if attributes[self.attribute_won[0]]:
                 reward = self.win_reward
                 if agent == self.__x_agent:
-                    episode_outcome = TicTacToeEventStream.TicTacToeEvent.X_WIN
+                    episode_outcome = TicTacToeEvent.X_WIN
                 else:
-                    episode_outcome = TicTacToeEventStream.TicTacToeEvent.O_WIN
+                    episode_outcome = TicTacToeEvent.O_WIN
             if attributes[self.attribute_draw[0]]:
                 reward = self.draw_reward
-                episode_outcome = TicTacToeEventStream.TicTacToeEvent.DRAW
+                episode_outcome = TicTacToeEvent.DRAW
 
         agent.reward(state, next_state, action, reward, episode_end)
         self.__ttt_event_stream.record_event(episode_uuid=self.__episode_uuid,

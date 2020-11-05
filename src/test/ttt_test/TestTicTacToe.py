@@ -122,7 +122,7 @@ class TestTicTacToe(unittest.TestCase):
                             x_to_start=x_to_start)
             episodes = ttt.run(num_episodes=1)
             self.assertEqual(1, len(episodes))
-            events = self.__ttt_event_stream.get_episode(episode_uuid=episodes[0])
+            events = self.__ttt_event_stream.get_session(episode_uuid=episodes[0])
             expected_results = [
                 [1, '000000000', 0, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
                 [2, '-100000000', 8, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
@@ -166,7 +166,7 @@ class TestTicTacToe(unittest.TestCase):
                             x_to_start=x_to_start)
             episodes = ttt.run(num_episodes=1)
             self.assertEqual(1, len(episodes))
-            events = self.__ttt_event_stream.get_episode(episode_uuid=episodes[0])
+            events = self.__ttt_event_stream.get_session(episode_uuid=episodes[0])
             expected_results = [
                 [1, '000000000', 0, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
                 [2, '-100000000', 1, TicTacToe.play_reward, False, TicTacToeEventStream.TicTacToeEvent.STEP],
