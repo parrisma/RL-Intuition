@@ -2,6 +2,7 @@ from typing import Dict
 import numpy as np
 from src.tictactoe.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
+from src.tictactoe.q_vals import QVals
 
 
 class Experiment3(ExperimentBase):
@@ -25,7 +26,7 @@ class Experiment3(ExperimentBase):
     gamma: float  # How much do we value future rewards
     learning_rate: float  # Min (initial) size of Q Value update
     num_actions: int
-    q_values: Dict[str, np.ndarray]  # State str : Key -> actions q values & #num times reward seen
+    q_values: Dict[str, QVals]  # State str : Key -> actions q values & #num times reward seen
 
     def __init__(self):
         # Needed to bootstrap the base environment but not used in this experiment so just use
@@ -45,8 +46,8 @@ class Experiment3(ExperimentBase):
         :return: The Q Values for given state as numpy array of float
         """
         if state not in self.q_values:
-            self.q_values[state] = np.zeros((self.num_actions))
-        return self.q_values[state]
+            self.q_values[state] = QVals(state=state)
+        return self.q_values[state].q_vals
 
     def set_state_q_values(self,
                            state: str,
@@ -57,8 +58,8 @@ class Experiment3(ExperimentBase):
         :param q_values: The Q Values to set for the given state
         """
         if state not in self.q_values:
-            self.q_values[state] = np.zeros((self.num_actions))
-        self.q_values[state] = q_values
+            self.q_values[state] = QVals(state=state)
+        self.q_values[state].q_vals = q_values
         return
 
     def update_q(self,
@@ -86,8 +87,13 @@ class Experiment3(ExperimentBase):
         Load all episodes for given session and iteratively update q values for event by episode.
         :param session_uuid: The session uuid to lead events for.
         """
+        self._trace.log().info("Start loading events for session {}".format(session_uuid))
         events = self._ttt_event_stream.get_session(session_uuid=session_uuid)
+        self._trace.log().info("Loaded [{}] events for session {}".format(len(events), session_uuid))
+
+        self._trace.log().info("Starting Q Value Calc")
         event_to_process = 0
+        rept = max(1,int(len(events)/10))
         while event_to_process < len(events):
             if not events[event_to_process].episode_end:
                 self.update_q(state=events[event_to_process].state.state_as_string(),
@@ -100,14 +106,24 @@ class Experiment3(ExperimentBase):
                               action=int(events[event_to_process].action),
                               reward=events[event_to_process].reward)
             event_to_process += 1
+            if event_to_process % rept == 0:
+                self._trace.log().info("Processed {:3.0f}% of events".format((event_to_process/len(events))*100))
+        self._trace.log().info("Done Q Value Calc")
+        print(self.q_values['010010-10-1'])
         return
+
+    def navigate_q(self) -> None:
+        """
+        Allow Q Values to be navigated in the console with single command input
+        """
+        pass
 
     def run(self) -> None:
         """
         Run the experiment where two random agents play against each other
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        self.calc_q(session_uuid="16bb709a30414471b0b7cc226a25c172")
+        self.calc_q(session_uuid="efed07a7c7f542c08bde825027308e8a")
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 

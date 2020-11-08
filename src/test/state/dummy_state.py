@@ -1,5 +1,5 @@
 import numpy as np
-from src.test.gibberish.gibberish import Gibberish
+from src.lib.gibberish import Gibberish
 
 from src.reflrn.interface.state import State
 

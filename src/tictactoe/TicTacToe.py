@@ -97,7 +97,6 @@ class TicTacToe(Environment):
     def __del__(self):
         """
         Ensure episode and sessions are closed before exit
-        :return:
         """
         self.__episode_end()
         self.__session_end()
@@ -107,7 +106,7 @@ class TicTacToe(Environment):
         """
         Establish internal state to be that as at start of new Episode. If an existing Episode is in progress that
         Episode will be formally closed out.
-        :return:
+        :return: The board state, the first agent to play and the UUID of this episode
         """
         if self.__session_uuid is None:
             raise RuntimeError("Episode cannot be started outside of an active session")
@@ -375,11 +374,11 @@ class TicTacToe(Environment):
             return True
         return False
 
-    def __string_to_internal_state(self, moves_as_str):
+    def __string_to_internal_state(self, moves_as_str) -> None:
         """
-        Establih current game state to matach that of teh given structured text string
-        :param moves_as_str:
-        :return:
+        Establish current game state to match that of the given structured text string. The steps are not simulated
+        but just loaded directly as a board state.
+        :param moves_as_str: The game state as structured text to load internally
         """
         mvs = moves_as_str.split('~')
         if moves_as_str is not None:
@@ -392,7 +391,7 @@ class TicTacToe(Environment):
     def __internal_state_to_string(self) -> str:
         """
         Render the current game state as a structured text string
-        :return: Current game state as structures text that can be parsed
+        :return: Current game state as structures text
         """
         mvs = ""
         bd = np.reshape(self.__board, self.__board.size)

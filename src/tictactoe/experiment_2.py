@@ -21,7 +21,7 @@ class Experiment2(ExperimentBase):
         Run the experiment where two random agents play against each other
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        events = self._ttt_event_stream.get_session(session_uuid="7ebb7f0c1ddc423bbad3dd8624d55aba")
+        events = self._ttt_event_stream.get_session(session_uuid="efed07a7c7f542c08bde825027308e8a")
         session_stats = SessionStats(events)
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return

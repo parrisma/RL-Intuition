@@ -17,7 +17,7 @@ class TicTacToeLinkedEvent:
         prv = ""
         nxt = ""
         if self.prev_event is not None:
-            prv = "{}-{}".form(self.prev_event.episode_uuid, self.prev_event.episode_step)
+            prv = "{}-{}".format(self.prev_event.episode_uuid, self.prev_event.episode_step)
         if self.next_event is not None:
             nxt = "{}-{}".format(self.next_event.episode_uuid, self.next_event.episode_step)
 

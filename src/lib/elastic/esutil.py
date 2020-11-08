@@ -13,6 +13,7 @@ class ESUtil:
     _es = dict()
 
     _ALL = 10000
+    _SCROLL = '1m'
     _COUNT = 0
     MATCH_ALL = '{"query":{"match_all": {}}}}'
 
@@ -183,13 +184,24 @@ class ESUtil:
         try:
             json_query_to_execute = ESUtil.json_insert_args(json_source=json_query, **kwargs)
             # Exception will indicate search error.
+            all = list()
             res = es.search(index=idx_name,
                             body=json_query_to_execute,
+                            scroll=ESUtil._SCROLL,
                             size=ESUtil._ALL)
+            scroll_id = res['_scroll_id']
+            scroll_size = len(res['hits']['hits'])
+            all.extend(res['hits']['hits'])
+            while scroll_size > 0:
+                res = es.scroll(scroll_id=scroll_id, scroll=ESUtil._SCROLL)
+                scroll_id = res['_scroll_id']
+                scroll_size = len(res['hits']['hits'])
+                all.extend(res['hits']['hits'])
+
         except Exception as e:
             raise RuntimeError(
                 "Failed to execute query [{}] on Index [{}]".format(json_query, idx_name))
-        return list(res['hits']['hits'])
+        return all
 
     @staticmethod
     def run_count(es: Elasticsearch,

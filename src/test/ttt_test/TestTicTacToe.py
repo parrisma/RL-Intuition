@@ -49,11 +49,11 @@ class TestTicTacToe(unittest.TestCase):
 
     def setUp(self) -> None:
         TestTicTacToe._run += 1
-        self._trace.log().info("- - - - - - C A S E {} Start - - - - - -".format(TestTicTacToe._run))
+        self._trace.log().debug("- - - - - - C A S E {} Start - - - - - -".format(TestTicTacToe._run))
         return
 
     def tearDown(self) -> None:
-        self._trace.log().info("- - - - - - C A S E {} Passed - - - - - -".format(TestTicTacToe._run))
+        self._trace.log().debug("- - - - - - C A S E {} Passed - - - - - -".format(TestTicTacToe._run))
         return
 
     def test_1(self):

@@ -4,8 +4,6 @@ from src.lib.rltrace.trace import Trace
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.agent_factory import AgentFactory
 from src.reflrn.interface.state import State
-from src.lib.uniqueref import UniqueRef
-from src.test.gibberish.gibberish import Gibberish
 
 
 class RandomPlayAgent(Agent):
@@ -29,7 +27,7 @@ class RandomPlayAgent(Agent):
         self._trace = self._env.get_trace()
         self._id = agent_id
         self._name = agent_name
-        self._trace.log().info("Agent created => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Agent created => {}:{}".format(self._id, self._name))
         return
 
     def id(self):
@@ -60,7 +58,7 @@ class RandomPlayAgent(Agent):
         Callback for agent to process notification of a new episode
         :param state: The opening state of the episode
         """
-        self._trace.log().info("Agent notified of episode start => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Agent notified of episode start => {}:{}".format(self._id, self._name))
         return
 
     def episode_complete(self, state: State) -> None:
@@ -68,7 +66,7 @@ class RandomPlayAgent(Agent):
         Callback for agent to process notification of episode completion
         :param state: The state at as episode completion
         """
-        self._trace.log().info("Agent notified of episode completion => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Agent notified of episode completion => {}:{}".format(self._id, self._name))
         return
 
     def choose_action(self, state: State, possible_actions: [int]) -> int:

@@ -21,7 +21,7 @@ class Experiment1(ExperimentBase):
         Run the experiment where two random agents play against each other
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        self._ttt.run(num_episodes=5)
+        self._ttt.run(num_episodes=3)
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 
