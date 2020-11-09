@@ -12,10 +12,22 @@
         "format": "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"
       },
       "session_uuid": {
-        "type": "text"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
       },
       "episode_uuid": {
-        "type": "text"
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
       },
       "episode_step": {
         "type": "long"
