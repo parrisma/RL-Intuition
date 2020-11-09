@@ -41,11 +41,6 @@ class RunSpec:
     def current_branch(self) -> str:
         return getattr(self, "{}".format(self.M_CURR_BRANCH))
 
-    def pubsub_settings_yaml(self) -> str:
-        return "{}/{}/{}".format(getattr(self._settings, "{}_git_root".format(self._spec)),
-                                 getattr(self._settings, "{}_branch".format(self._spec)),
-                                 getattr(self._settings, "{}_kafka_yml".format(self._spec)))
-
     def elastic_settings_yaml(self) -> str:
         return "{}/{}/{}".format(getattr(self._settings, "{}_git_root".format(self._spec)),
                                  getattr(self._settings, "{}_branch".format(self._spec)),

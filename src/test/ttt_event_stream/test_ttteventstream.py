@@ -30,8 +30,6 @@ class TestTTTEventStream(unittest.TestCase):
     _trace = None
     _env = None
 
-    SESSION_UUID_Q = '{"query":{"term":{ "session_uuid":"<arg0>"}}}'
-
     def __init__(self, *args, **kwargs):
         super(TestTTTEventStream, self).__init__(*args, **kwargs)
         return
@@ -64,7 +62,7 @@ class TestTTTEventStream(unittest.TestCase):
         # Delete all documents created by this test session uuid
         ESUtil.delete_documents(es=TestTTTEventStream._es,
                                 idx_name=TestTTTEventStream._settings.ttt_event_index_name,
-                                json_query=TestTTTEventStream.SESSION_UUID_Q,
+                                json_query=TicTacToeEventStream.SESSION_UUID_Q,
                                 arg0=TestTTTEventStream._sess_uuid)
         return
 
@@ -90,7 +88,7 @@ class TestTTTEventStream(unittest.TestCase):
 
         cnt = ESUtil.run_count(es=TestTTTEventStream._es,
                                idx_name=TestTTTEventStream._settings.ttt_event_index_name,
-                               json_query=TestTTTEventStream.SESSION_UUID_Q,
+                               json_query=TicTacToeEventStream.SESSION_UUID_Q,
                                arg0=TestTTTEventStream._sess_uuid)
         self.assertEqual(1, cnt)
         return

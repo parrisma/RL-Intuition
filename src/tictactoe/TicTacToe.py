@@ -1,5 +1,6 @@
 from typing import Tuple, Dict, List
 from random import randint
+from copy import deepcopy
 
 import numpy as np
 
@@ -265,7 +266,60 @@ class TicTacToe(Environment):
                                              episode_outcome=episode_outcome)
         return
 
-    def __play_action(self, agent: Agent) -> Agent:
+    def __id_to_agent(self,
+                      agent_id) -> Agent:
+        """
+        Take the given id an return the matching agent
+        :param agent_id: The numerical Id or name of the agent
+        :return: The matching Agent or none if no match
+        """
+        agent = None
+        if type(agent_id) == int:
+            if self.__x_agent.id() == agent_id:
+                agent = self.__x_agent
+            elif self.__o_agent.id() == agent_id:
+                agent = self.__o_agent
+        elif type(agent_id) == str:
+            if self.__x_agent.name() == agent_id:
+                agent = self.__x_agent
+            elif self.__o_agent.name() == agent_id:
+                agent = self.__o_agent
+        return agent
+
+    def do_action(self,
+                  agent_id,
+                  action: int) -> str:
+        """
+        Update the internal state to reflect the given action. This only effects internal state it does not
+        notify the agents; for this __play_action() should be used.
+
+        This is used for debug and is not part of the core game algorithm
+
+        :param agent_id: The Id of the agent to play the action as
+        :param action: The action to play
+        :return: The name of the next agent to play or None if the Agent/Action combo was illegal
+        """
+        next_agent = None
+        if action not in self.__actions_ids_left_to_take():
+            self.__trace.log().info("do_action ignored illegal action [{}] in state [{}]".
+                                    format(action,
+                                           self.state().state_as_string()))
+        else:
+            agent = self.__id_to_agent(agent_id)
+            if agent is None:
+                self.__trace.log().info("do_action ignored unknown agent [{}]".format(agent_id))
+            else:
+                st = self.state_as_str()
+                if len(st) > 0:
+                    st = "{}~{}:{}".format(st, agent.id(), action)
+                else:
+                    st = "{}:{}".format(agent.id(), action)
+                self.__string_to_internal_state(st)
+                next_agent = (self.__next_agent[agent.name()]).name()
+        return next_agent
+
+    def __play_action(self,
+                      agent: Agent) -> Agent:
         """
         Make the play chosen by the given agent. If it is a valid play
         confer reward and switch play to other agent. If invalid play
@@ -380,12 +434,13 @@ class TicTacToe(Environment):
         but just loaded directly as a board state.
         :param moves_as_str: The game state as structured text to load internally
         """
-        mvs = moves_as_str.split('~')
-        if moves_as_str is not None:
-            for mv in mvs:
-                if len(mv) > 0:
-                    pl, ps = mv.split(":")
-                    self.__take_action(int(ps), self.__agents[int(pl)])
+        if len(moves_as_str) > 0:
+            mvs = moves_as_str.split('~')
+            if moves_as_str is not None:
+                for mv in mvs:
+                    if len(mv) > 0:
+                        pl, ps = mv.split(":")
+                        self.__take_action(int(ps), self.__agents[int(pl)])
         return
 
     def __internal_state_to_string(self) -> str:
@@ -425,9 +480,7 @@ class TicTacToe(Environment):
         :param state_as_string: The structured text from which to establish the game state
         :return:
         """
-        # Must be an open episode
-        if self.__episode_uuid is None:
-            self.episode_start()
+        self.episode_start()
         self.__string_to_internal_state(state_as_string)
         return
 
@@ -439,6 +492,20 @@ class TicTacToe(Environment):
         return TicTacToeState(self.__board,
                               self.__x_agent,
                               self.__o_agent)
+
+    def x_agent_name(self) -> str:
+        """
+        Get the name of the X agent
+        :return: The name of the X Agent as string
+        """
+        return self.__x_agent.name()
+
+    def o_agent_name(self) -> Agent:
+        """
+        Get the name of the O agent
+        :return: The name of the O Agent as string
+        """
+        return self.__o_agent.name()
 
     class IllegalActorAction(Exception):
         """

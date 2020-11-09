@@ -3,6 +3,8 @@ import numpy as np
 from src.tictactoe.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 from src.tictactoe.q_vals import QVals
+from src.tictactoe.q_nav import QNav
+from src.tictactoe.nav_cmd import NavCmd
 
 
 class Experiment3(ExperimentBase):
@@ -93,7 +95,7 @@ class Experiment3(ExperimentBase):
 
         self._trace.log().info("Starting Q Value Calc")
         event_to_process = 0
-        rept = max(1,int(len(events)/10))
+        rept = max(1, int(len(events) / 10))
         while event_to_process < len(events):
             if not events[event_to_process].episode_end:
                 self.update_q(state=events[event_to_process].state.state_as_string(),
@@ -107,16 +109,10 @@ class Experiment3(ExperimentBase):
                               reward=events[event_to_process].reward)
             event_to_process += 1
             if event_to_process % rept == 0:
-                self._trace.log().info("Processed {:3.0f}% of events".format((event_to_process/len(events))*100))
+                self._trace.log().info("Processed {:3.0f}% of events".format((event_to_process / len(events)) * 100))
         self._trace.log().info("Done Q Value Calc")
         print(self.q_values['010010-10-1'])
         return
-
-    def navigate_q(self) -> None:
-        """
-        Allow Q Values to be navigated in the console with single command input
-        """
-        pass
 
     def run(self) -> None:
         """
@@ -124,6 +120,10 @@ class Experiment3(ExperimentBase):
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
         self.calc_q(session_uuid="efed07a7c7f542c08bde825027308e8a")
+        self._ttt.episode_start()  # make sure TTT is in an initial state for an episode
+        NavCmd(QNav(ttt=self._ttt,
+                    q_vals=self.q_values,
+                    trace=self._trace)).cmdloop()
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 

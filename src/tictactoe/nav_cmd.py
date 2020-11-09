@@ -1,5 +1,5 @@
 import cmd
-from src.tictactoe.nav import Nav
+from src.tictactoe.interface.nav import Nav
 
 
 class NavCmd(cmd.Cmd):
@@ -67,6 +67,11 @@ class NavCmd(cmd.Cmd):
     def do_back(self, arg):
         'Navigate to back to previous state'
         Nav.Action.action_back.do(self._nav)
+        return
+
+    def do_home(self, arg):
+        'Navigate to back to initial state'
+        Nav.Action.action_home.do(self._nav)
         return
 
     def do_bye(self, arg):

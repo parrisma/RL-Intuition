@@ -20,6 +20,7 @@ class Nav(metaclass=abc.ABCMeta):
         action_8_cmd = "8"
         action_9_cmd = "9"
         action_back_cmd = "back"
+        action_home_cmd = "home"
 
     @unique
     class Action(IntEnum):
@@ -34,6 +35,7 @@ class Nav(metaclass=abc.ABCMeta):
         action_8 = 8
         action_9 = 9
         action_back = -1
+        action_home = -2
 
         def __init__(self,
                      action: int):
@@ -43,6 +45,10 @@ class Nav(metaclass=abc.ABCMeta):
 
         def do(self,
                nav: 'Nav'):
+            if self.value == Nav.Action.action_back:
+                return nav.do_back()
+            if self.value == Nav.Action.action_home:
+                return nav.do_home()
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -51,5 +57,19 @@ class Nav(metaclass=abc.ABCMeta):
         """
         Navigate the structure by following the given action
         :param action: The action to navigate by
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_back(self) -> None:
+        """
+        Navigate back to the previous state is there was one
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_home(self) -> None:
+        """
+        Navigate to the initial state
         """
         raise NotImplementedError()

@@ -4,7 +4,7 @@ from src.lib.rltrace.trace import Trace
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
 from src.lib.webstream import WebStream
-from src.tictactoe.nav import Nav
+from src.tictactoe.interface.nav import Nav
 from src.tictactoe.nav_cmd import NavCmd
 from src.test.test_nav.dummy_nav import DummyNav
 
@@ -52,7 +52,8 @@ class TestNav(unittest.TestCase):
                       [Nav.ActionCmd.action_7_cmd, Nav.Action.action_7],
                       [Nav.ActionCmd.action_8_cmd, Nav.Action.action_8],
                       [Nav.ActionCmd.action_9_cmd, Nav.Action.action_9],
-                      [Nav.ActionCmd.action_back_cmd, Nav.Action.action_back]]
+                      [Nav.ActionCmd.action_back_cmd, Nav.Action.action_back],
+                      [Nav.ActionCmd.action_home_cmd, Nav.Action.action_home]]
         dummy_nav = DummyNav(trace=self._trace)
         nav_cmd = NavCmd(dummy_nav)
         for case in test_cases:
