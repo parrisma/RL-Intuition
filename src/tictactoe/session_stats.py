@@ -1,7 +1,7 @@
 from typing import Dict, List
 
-from src.tictactoe.tictacttoe_event import TicTacToeEvent
-from src.tictactoe.tictactoe_linked_event import TicTacToeLinkedEvent
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.event.tictactoe_linked_event import TicTacToeLinkedEvent
 
 
 class SessionStats:

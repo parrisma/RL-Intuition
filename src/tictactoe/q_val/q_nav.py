@@ -2,7 +2,9 @@ from typing import Dict, List
 from src.tictactoe.interface.nav import Nav
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.TicTacToe import TicTacToe
-from src.tictactoe.q_vals import QVals
+from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.q_val.q_vals import QVals
+from src.tictactoe.q_val.q_calc import QCalc
 
 
 class QNav(Nav):
@@ -14,16 +16,33 @@ class QNav(Nav):
     _q_vals: Dict[str, QVals]
     _last: List
     _trace: Trace
+    _ttt_event_stream: TicTacToeEventStream
     _agent_name: str
+
+    _sep: str = "_____________________________________________________________________"
 
     def __init__(self,
                  ttt: TicTacToe,
-                 q_vals: Dict[str, QVals],
+                 ttt_event_stream: TicTacToeEventStream,
                  trace: Trace):
-        self._ttt = ttt
-        self._q_vals = q_vals
         self._trace = trace
+        self._ttt_event_stream = ttt_event_stream
+        self._ttt = ttt
+        self._q_vals = dict()
         self._reset()
+        self._show(state=self._ttt.state().state_as_string())
+        return
+
+    def _show(self,
+              state: str) -> None:
+        """
+        Show the Q Values for the current state
+        :param state: The State (as string) to show Q Values for
+        """
+        if len(self._q_vals) > 0:
+            self._trace.log().debug("\n{}".format(self._q_vals[state]))
+        else:
+            self._trace.log().info("No events or Q Values have yet been loaded")
         return
 
     def _reset(self):
@@ -34,10 +53,6 @@ class QNav(Nav):
         self._last = list()
         self._agent_name = self._ttt.x_agent_name()
         self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
-        if self._ttt.state().state_as_string() not in self._q_vals:
-            err = "Initial state [{}] not found in given Q Values".format(self._ttt.state_as_str())
-            self._trace.log().critical(err)
-            raise RuntimeError(err)
         return
 
     def do_action(self,
@@ -58,7 +73,7 @@ class QNav(Nav):
             else:
                 self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
                 self._agent_name = next_agent
-                self._trace.log().debug("\n{}".format(self._q_vals[self._ttt.state().state_as_string()]))
+                self._show(state=self._ttt.state().state_as_string())
         return
 
     def do_back(self) -> None:
@@ -70,9 +85,9 @@ class QNav(Nav):
             st, agnt = self._last[-1]
             self._ttt.import_state(st)
             self._agent_name = agnt
-            self._trace.log().debug("\n{}".format(self._q_vals[self._ttt.state().state_as_string()]))
+            self._show(state=self._ttt.state().state_as_string())
         else:
-            self._trace.log().debug("Cannot go back, already at initial state")
+            self._trace.log().debug("Cannot go back because we are at initial (root) state")
         return
 
     def do_home(self) -> None:
@@ -81,5 +96,26 @@ class QNav(Nav):
         """
         self._ttt.episode_start()
         self._last = [self._ttt.state_as_str(), self._ttt.x_agent_name()]
-        self._trace.log().debug("\n{}".format(self._q_vals[self._ttt.state().state_as_string()]))
+        self._show(state=self._ttt.state().state_as_string())
+        return
+
+    def do_switch(self) -> None:
+        """
+        Switch Player perspective
+        """
+        if self._agent_name == self._ttt.x_agent_name():
+            self._agent_name = self._ttt.o_agent_name()
+        else:
+            self._agent_name = self._ttt.x_agent_name()
+        self._show(state=self._ttt.state().state_as_string())
+        return
+
+    def do_load(self,
+                arg) -> None:
+        """
+        Load the session uuid given as arg
+        """
+        self._q_vals = QCalc(trace=self._trace,
+                             ttt_event_stream=self._ttt_event_stream).calc_q(session_uuid=arg)
+        self.do_home()
         return

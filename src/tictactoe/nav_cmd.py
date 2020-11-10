@@ -14,66 +14,76 @@ class NavCmd(cmd.Cmd):
         self._nav = nav
         return
 
-    def do_0(self, arg):
-        'Navigate to state as if taking action 0'
+    def do_0(self):
+        """Navigate to state as if taking action 0"""
         Nav.Action.action_0.do(self._nav)
         return
 
-    def do_1(self, arg):
-        'Navigate to state as if taking action 1'
+    def do_1(self):
+        """Navigate to state as if taking action 1"""
         Nav.Action.action_1.do(self._nav)
         return
 
-    def do_2(self, arg):
-        'Navigate to state as if taking action 2'
+    def do_2(self):
+        """Navigate to state as if taking action 2"""
         Nav.Action.action_2.do(self._nav)
         return
 
     def do_3(self, arg):
-        'Navigate to state as if taking action 3'
+        """Navigate to state as if taking action 3"""
         Nav.Action.action_3.do(self._nav)
         return
 
     def do_4(self, arg):
-        'Navigate to state as if taking action 4'
+        """Navigate to state as if taking action 4"""
         Nav.Action.action_4.do(self._nav)
         return
 
     def do_5(self, arg):
-        'Navigate to state as if taking action 5'
+        """Navigate to state as if taking action 5"""
         Nav.Action.action_5.do(self._nav)
         return
 
     def do_6(self, arg):
-        'Navigate to state as if taking action 6'
+        """Navigate to state as if taking action 6"""
         Nav.Action.action_6.do(self._nav)
         return
 
     def do_7(self, arg):
-        'Navigate to state as if taking action 7'
+        """Navigate to state as if taking action 7"""
         Nav.Action.action_7.do(self._nav)
         return
 
     def do_8(self, arg):
-        'Navigate to state as if taking action 8'
+        """Navigate to state as if taking action 8"""
         Nav.Action.action_8.do(self._nav)
         return
 
     def do_9(self, arg):
-        'Navigate to state as if taking action 9'
+        """Navigate to state as if taking action 9"""
         Nav.Action.action_9.do(self._nav)
         return
 
     def do_back(self, arg):
-        'Navigate to back to previous state'
+        """Navigate to back to previous state"""
         Nav.Action.action_back.do(self._nav)
         return
 
     def do_home(self, arg):
-        'Navigate to back to initial state'
+        """Navigate to back to initial state"""
         Nav.Action.action_home.do(self._nav)
         return
 
+    def do_load(self, arg):
+        """Load the given session UUID"""
+        Nav.Action.action_load.do(self._nav, arg=arg)
+        return
+
+    def do_switch(self, arg):
+        """Switch player perspective to take next action on board"""
+        Nav.Action.action_switch.do(self._nav)
+        return
+
     def do_bye(self, arg):
-        'End navigation session'
+        """End navigation session"""
         return True

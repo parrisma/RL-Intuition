@@ -1,6 +1,5 @@
 from typing import Tuple, Dict, List
 from random import randint
-from copy import deepcopy
 
 import numpy as np
 
@@ -9,8 +8,8 @@ from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
 from src.lib.envboot.env import Env
-from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
 
@@ -500,7 +499,7 @@ class TicTacToe(Environment):
         """
         return self.__x_agent.name()
 
-    def o_agent_name(self) -> Agent:
+    def o_agent_name(self) -> str:
         """
         Get the name of the O agent
         :return: The name of the O Agent as string

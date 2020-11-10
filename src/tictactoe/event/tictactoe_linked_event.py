@@ -1,4 +1,4 @@
-from src.tictactoe.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 
 
 class TicTacToeLinkedEvent:

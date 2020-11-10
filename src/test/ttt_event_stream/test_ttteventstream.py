@@ -10,10 +10,10 @@ from src.lib.settings import Settings
 from src.lib.webstream import WebStream
 from src.lib.envboot.runspec import RunSpec
 from src.lib.elastic.esutil import ESUtil
-from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.test.state.dummy_state import DummyState
 from src.test.ttt_event_stream.DummyStateFactory import DummyStateFactory
-from src.tictactoe.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 
 
 class TestTTTEventStream(unittest.TestCase):

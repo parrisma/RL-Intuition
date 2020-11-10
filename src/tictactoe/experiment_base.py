@@ -8,7 +8,7 @@ from src.reflrn.interface.experiment import Experiment
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.agent_factory import AgentFactory
 from src.tictactoe.TicTacToeStateFactory import TicTacToeStateFactory
-from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.TicTacToe import TicTacToe
 
 

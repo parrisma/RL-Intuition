@@ -21,6 +21,8 @@ class Nav(metaclass=abc.ABCMeta):
         action_9_cmd = "9"
         action_back_cmd = "back"
         action_home_cmd = "home"
+        action_load_cmd = "load"
+        action_switch_cmd = "switch"
 
     @unique
     class Action(IntEnum):
@@ -36,6 +38,8 @@ class Nav(metaclass=abc.ABCMeta):
         action_9 = 9
         action_back = -1
         action_home = -2
+        action_load = -3
+        action_switch = -4
 
         def __init__(self,
                      action: int):
@@ -44,11 +48,16 @@ class Nav(metaclass=abc.ABCMeta):
             return
 
         def do(self,
-               nav: 'Nav'):
+               nav: 'Nav',
+               arg=None):
             if self.value == Nav.Action.action_back:
                 return nav.do_back()
             if self.value == Nav.Action.action_home:
                 return nav.do_home()
+            if self.value == Nav.Action.action_load:
+                return nav.do_load(arg)
+            if self.value == Nav.Action.action_switch:
+                return nav.do_switch()
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -71,5 +80,20 @@ class Nav(metaclass=abc.ABCMeta):
     def do_home(self) -> None:
         """
         Navigate to the initial state
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_load(self,
+                session_uuid: str) -> None:
+        """
+        Load the given session UUID
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_switch(self) -> None:
+        """
+        Switch perspective to other player e.g. O -> X or X -> O
         """
         raise NotImplementedError()

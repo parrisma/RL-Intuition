@@ -4,7 +4,7 @@ from elasticsearch import Elasticsearch
 from src.reflrn.interface.state import State
 from src.reflrn.interface.state_factory import StateFactory
 from src.lib.elastic.esutil import ESUtil
-from src.tictactoe.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 
 
 class TicTacToeEventStream:

@@ -8,8 +8,8 @@ from src.test.ttt_test.test_agent import TestAgent
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
 from src.lib.webstream import WebStream
-from src.tictactoe.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 from src.lib.uniqueref import UniqueRef
 from src.tictactoe.TicTacToeStateFactory import TicTacToeStateFactory
 
