@@ -12,6 +12,7 @@ class NavCmd(cmd.Cmd):
                  nav: Nav):
         super().__init__()
         self._nav = nav
+        self.intro = "Type help for all commands or use [list] to see session id's you can then [load]"
         return
 
     def do_0(self, arg):
@@ -82,6 +83,11 @@ class NavCmd(cmd.Cmd):
     def do_switch(self, arg):
         """Switch player perspective to take next action on board"""
         Nav.Action.action_switch.do(self._nav)
+        return
+
+    def do_list(self, arg):
+        """List the UUIDs of the sessions that can be loaded"""
+        Nav.Action.action_list.do(self._nav)
         return
 
     def do_bye(self, arg):

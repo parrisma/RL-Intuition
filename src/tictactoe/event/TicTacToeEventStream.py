@@ -26,7 +26,7 @@ class TicTacToeEventStream:
 
     SESSION_UUID_Q = '{"query":{"term":{ "session_uuid":"<arg0>"}}}'
     EPISODE_UUID_Q = '{"query":{"term":{ "episode_uuid":"<arg0>"}}}'
-    SESSION_LIST_Q = '{"aggs":{"session_uuid_list": {"terms": {"field": "session_uuid.keyword"}}}}'
+    SESSION_LIST_Q = '{"aggs":{"<arg0>": {"terms": {"field": "session_uuid.keyword"}}}}'
 
     def __init__(self,
                  es: Elasticsearch,
@@ -125,19 +125,17 @@ class TicTacToeEventStream:
         res = sorted(res, key=lambda x: "{}{}".format(x.episode_uuid, x.episode_step))
         return res
 
-    def list_of_available_sessions(self):
+    def list_of_available_sessions(self) -> List[List]:
         """
         Return a list of all the session_uuid for which there are ttt events
         :return: List of session_uuid's
-        GET /ttt_event/_search
-        {
-            "aggs": {
-                "agg1": {
-                    "terms": {
-                        "field": "session_uuid.keyword"
-                            }
-                        }
-                }
-        }
         """
-        return
+        try:
+            ttt_session_uuids = ESUtil.run_search_agg(es=self._es,
+                                                      idx_name=self._es_index,
+                                                      json_query=self.SESSION_LIST_Q,
+                                                      arg0='session_uuid_list')
+        except Exception as e:
+            raise RuntimeError(
+                "Get session uuids failed with exception [{}]".format(str(e)))
+        return ttt_session_uuids

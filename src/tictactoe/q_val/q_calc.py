@@ -122,15 +122,19 @@ class QCalc:
         return events
 
     def calc_q(self,
-               session_uuid: str) -> Dict[str, QVals]:
+               session_uuid: str,
+               reprocess_count: int = 1) -> Dict[str, QVals]:
         """
         Load all episodes for given session and iteratively update q values for event by episode.
         :param session_uuid: The session uuid to lead events for.
+        :param reprocess_count: The number of time to process the events to allow for q value propagation
         """
+        if reprocess_count < 0:
+            reprocess_count = 1
         self.q_values = dict()
         events = self._load_session(session_uuid=session_uuid)
         if len(events) > 0:
-            for i in range(0, 50):
+            for i in range(reprocess_count):
                 self._trace.log().info("Starting Q Value Calc")
                 event_to_process = 0
                 rept = max(1, int(len(events) / 10))

@@ -44,6 +44,7 @@ class TestTTTEventStream(unittest.TestCase):
                                  bespoke_transforms=cls._run_spec.setting_transformers())
         cls._sess_uuid = UniqueRef().ref
         cls._state_factory = DummyStateFactory()
+        cls._session_uuids_to_delete = list()
 
         return
 
@@ -58,12 +59,14 @@ class TestTTTEventStream(unittest.TestCase):
         Delete all documents added for the test session uuid
         """
         self._trace.log().info("- - - - - - C A S E {} Passed - - - - - -".format(TestTTTEventStream._run))
-
+        self._session_uuids_to_delete.append(TestTTTEventStream._sess_uuid)
         # Delete all documents created by this test session uuid
-        ESUtil.delete_documents(es=TestTTTEventStream._es,
-                                idx_name=TestTTTEventStream._settings.ttt_event_index_name,
-                                json_query=TicTacToeEventStream.SESSION_UUID_Q,
-                                arg0=TestTTTEventStream._sess_uuid)
+        for sess_uuid in self._session_uuids_to_delete:
+            ESUtil.delete_documents(es=TestTTTEventStream._es,
+                                    idx_name=TestTTTEventStream._settings.ttt_event_index_name,
+                                    json_query=TicTacToeEventStream.SESSION_UUID_Q,
+                                    arg0=sess_uuid)
+        self._session_uuids_to_delete = list()
         return
 
     def test_1(self):
@@ -143,6 +146,50 @@ class TestTTTEventStream(unittest.TestCase):
         for expected, actual in zip(evnts, res):
             self.assertEqual(True, expected == actual)
 
+        return
+
+    def test_session_uuids(self):
+        """
+        Test we can get a list of session UUIDs
+        """
+        tttes_main = TicTacToeEventStream(es=TestTTTEventStream._es,
+                                          es_index=TestTTTEventStream._settings.ttt_event_index_name,
+                                          state_factory=self._state_factory,
+                                          session_uuid=TestTTTEventStream._sess_uuid)
+
+        expected_session_uuids = dict()
+        self._trace.log().info(
+            "- - - - - - C A S E {} Setting up session test data - - - - - -".format(TestTTTEventStream._run))
+        for i in range(3):
+            sess_uuid = UniqueRef().ref
+            expected_session_uuids[sess_uuid] = np.random.randint(50)
+            self._session_uuids_to_delete.append(sess_uuid)
+            tttes = TicTacToeEventStream(es=TestTTTEventStream._es,
+                                         es_index=TestTTTEventStream._settings.ttt_event_index_name,
+                                         state_factory=self._state_factory,
+                                         session_uuid=sess_uuid)
+            for j in range(expected_session_uuids[sess_uuid]):
+                tttes.record_event(episode_uuid=UniqueRef().ref,
+                                   episode_step=j,
+                                   state=DummyState(),
+                                   action=str(np.random.randint(10)),
+                                   reward=np.random.random(),
+                                   episode_end=False,
+                                   episode_outcome=TicTacToeEvent.STEP)
+            self._trace.log().info("- - - - - - Data set {} - - - - - -".format(sess_uuid))
+        TestTTTEventStream._es.indices.flush(index=TestTTTEventStream._settings.ttt_event_index_name)
+        self._trace.log().info(
+            "- - - - - - C A S E {} Done setting up session test data - - - - - -".format(TestTTTEventStream._run))
+        session_uuids = tttes_main.list_of_available_sessions()
+        i = 0
+        matched = 0
+        for sess in session_uuids:
+            uuid, cnt = sess
+            if uuid in expected_session_uuids:
+                self.assertEqual(expected_session_uuids[uuid], cnt)
+                matched += 1
+            i += 1
+        self.assertEqual(len(expected_session_uuids), matched)
         return
 
 

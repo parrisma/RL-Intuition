@@ -136,14 +136,45 @@ class QNav(Nav):
         self._show(state=self._ttt.state().state_as_string())
         return
 
+    @staticmethod
+    def parse(arg):
+        """
+        Convert a series of zero or more numbers to an argument tuple
+        """
+        return tuple(map(str, arg.split()))
+
     def do_load(self,
                 arg) -> None:
         """
         Load the session uuid given as arg
         """
-        self._q_vals = QCalc(trace=self._trace,
-                             ttt_event_stream=self._ttt_event_stream).calc_q(session_uuid=arg)
-        self._ttt.episode_start()
-        self._last = [self._ttt.state_as_str(), self._ttt.x_agent_name()]
-        self.do_home()
+        args = self.parse(arg)
+        if len(args) == 1:
+            uuid = args[0]
+            reprocess_count = 1
+        elif len(args) == 2:
+            uuid = args[0]
+            reprocess_count = int(args[1])
+        else:
+            self._trace.log().info("Load command requires at least a session UUID with an optional reprocess count")
+            uuid = None
+        if uuid is not None:
+            self._q_vals = QCalc(trace=self._trace,
+                                 ttt_event_stream=self._ttt_event_stream).calc_q(session_uuid=uuid,
+                                                                                 reprocess_count=reprocess_count)
+            self._ttt.episode_start()
+            self._last = [self._ttt.state_as_str(), self._ttt.x_agent_name()]
+            self.do_home()
+        return
+
+    def do_list(self) -> None:
+        """
+        List all the session uuids to select from
+        """
+        sessions = self._ttt_event_stream.list_of_available_sessions()
+        self._trace.log().info("Available Sessions")
+        for session in sessions:
+            uuid, cnt = session
+            self._trace.log().info("{} with {} events".format(uuid, cnt))
+        self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
         return

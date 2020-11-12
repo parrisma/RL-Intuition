@@ -170,7 +170,7 @@ class ESUtil:
                    json_query: str,
                    **kwargs) -> List[Dict]:
         """
-
+        Execute a search with a scroll context to recover entire result set even if > 10K documents
         :param es: An open elastic search connection
         :param idx_name: The name of the index to execute search on
         :param json_query: The Json query to run
@@ -184,24 +184,24 @@ class ESUtil:
         try:
             json_query_to_execute = ESUtil.json_insert_args(json_source=json_query, **kwargs)
             # Exception will indicate search error.
-            all = list()
+            search_res = list()
             res = es.search(index=idx_name,
                             body=json_query_to_execute,
                             scroll=ESUtil._SCROLL,
                             size=ESUtil._ALL)
             scroll_id = res['_scroll_id']
             scroll_size = len(res['hits']['hits'])
-            all.extend(res['hits']['hits'])
+            search_res.extend(res['hits']['hits'])
             while scroll_size > 0:
                 res = es.scroll(scroll_id=scroll_id, scroll=ESUtil._SCROLL)
                 scroll_id = res['_scroll_id']
                 scroll_size = len(res['hits']['hits'])
-                all.extend(res['hits']['hits'])
+                search_res.extend(res['hits']['hits'])
 
         except Exception as e:
             raise RuntimeError(
                 "Failed to execute query [{}] on Index [{}]".format(json_query, idx_name))
-        return all
+        return search_res
 
     @staticmethod
     def run_count(es: Elasticsearch,
@@ -267,4 +267,47 @@ class ESUtil:
 
     @staticmethod
     def bool_as_es_value(b: bool) -> str:
+        """
+        Render Python boolean as string form expected by elastic search
+        :param b: The bool value to render
+        :return: The bool rendered as in string form as expected by elastic search
+        """
         return str(b).lower()
+
+    @staticmethod
+    def run_search_agg(es: Elasticsearch,
+                       idx_name: str,
+                       json_query: str,
+                       **kwargs) -> List[List]:
+        """
+        Execute a search for an aggregation.
+        Note: This has a size of zero set to pull back just the aggregation results.
+        :param es: An open elastic search connection
+        :param idx_name: The name of the index to execute search aggregation on
+        :param json_query: The Json query to run
+        :param kwargs: arguments to the json_query of the form arg0='value 0', arg1='value 1' .. argn='value n'
+                       where the argument values will be substituted into the json query before it is executed.
+                       The raw query { x: { y: <arg0> } } will have <arg0> fully replaced with the corresponding
+                       kwargs value supplied for all arg0..argn. Where there are multiple occurrences of any <argn>
+                       all occurrences will be replaced.
+        :return: A list of aggregation keywords and associated counts.
+        """
+        try:
+            search_res = list()
+            if 'arg0' not in kwargs:
+                raise RuntimeError(
+                    "Aggregation search requires aggregation_name in query to be supplied in kwargs as arg0")
+            else:
+                agg_name = kwargs['arg0']
+            json_query_to_execute = ESUtil.json_insert_args(json_source=json_query, **kwargs)
+            # Exception will indicate search error.
+            search_res = list()
+            res = es.search(index=idx_name,
+                            body=json_query_to_execute,
+                            size=0)
+            for agg in res['aggregations'][agg_name]['buckets']:
+                search_res.append([agg['key'], agg['doc_count']])
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to execute aggregation search query [{}] on Index [{}]".format(json_query, idx_name))
+        return search_res
