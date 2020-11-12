@@ -1,5 +1,4 @@
 import unittest
-import logging
 import subprocess
 from src.lib.rltrace.trace import Trace
 from src.lib.envboot.runspec import RunSpec

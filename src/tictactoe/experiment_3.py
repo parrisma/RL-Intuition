@@ -1,6 +1,5 @@
 from src.tictactoe.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
-from src.tictactoe.q_val.q_calc import QCalc
 from src.tictactoe.q_val.q_nav import QNav
 from src.tictactoe.nav_cmd import NavCmd
 

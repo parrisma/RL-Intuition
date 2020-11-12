@@ -1,4 +1,5 @@
 from typing import Dict, List
+import numpy as np
 from src.tictactoe.interface.nav import Nav
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.TicTacToe import TicTacToe
@@ -33,6 +34,24 @@ class QNav(Nav):
         self._show(state=self._ttt.state().state_as_string())
         return
 
+    def _greedy_action(self,
+                       q_vals: np.ndarray) -> int:
+        """
+        Return the valid action associated with the highest reward
+        :return: The action to maximise reward
+        """
+        if self._ttt.episode_complete():
+            greedy_actn = -1
+        else:
+            res = list()
+            valid_actions = self._ttt.actions(self._ttt.state())
+            if len(valid_actions) > 0:
+                for actn in valid_actions:
+                    res.append([actn, q_vals[actn]])
+                res = sorted(res, key=lambda x: x[1])
+                greedy_actn = res[-1][0]
+        return greedy_actn
+
     def _show(self,
               state: str) -> None:
         """
@@ -40,9 +59,11 @@ class QNav(Nav):
         :param state: The State (as string) to show Q Values for
         """
         if len(self._q_vals) > 0:
-            self._trace.log().debug("\n{}".format(self._q_vals[state]))
+            q_vals = self._q_vals[state]
+            self._trace.log().debug("\n{}".format(q_vals))
+            self._trace.log().debug("Greedy Action [{}]".format(self._greedy_action(q_vals=q_vals.q_vals)))
         else:
-            self._trace.log().info("No events or Q Values have yet been loaded")
+            self._trace.log().info("Use the load <session_uuid> command to get started")
         return
 
     def _reset(self):
@@ -62,18 +83,23 @@ class QNav(Nav):
         report an illegal move and do nothing
         :param action: The action to take from the current state
         """
-        self._trace.log().debug("- - - - - - Nav Action {} Invoked".format(str(action)))
-        next_agent = self._ttt.do_action(agent_id=self._agent_name, action=action)
-        if next_agent is not None:
-            if self._ttt.state().state_as_string() not in self._q_vals:
-                self._trace.log().debug("- - - - - - [{}] not found in given Q Values".format(self._ttt.state_as_str()))
-                st, agnt = self._last[-1]
-                self._ttt.import_state(st)
-                self._agent_name = agnt
-            else:
-                self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
-                self._agent_name = next_agent
-                self._show(state=self._ttt.state().state_as_string())
+        self._trace.log().info("- - - - - - Nav Action {} Invoked".format(str(action)))
+        if not self._ttt.episode_complete():
+            next_agent = self._ttt.do_action(agent_id=self._agent_name, action=action)
+            if next_agent is not None:
+                if self._ttt.state().state_as_string() not in self._q_vals:
+                    self._trace.log().info("- - - - - - [{}] not found in given Q Values".
+                                           format(self._ttt.state_as_str()))
+                    st, agnt = self._last[-1]
+                    self._ttt.import_state(st)
+                    self._agent_name = agnt
+                else:
+                    self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
+                    self._agent_name = next_agent
+                    self._show(state=self._ttt.state().state_as_string())
+
+        if self._ttt.episode_complete():
+            self._trace.log().info("This is the end of this episode sequence, use [home] command to reset")
         return
 
     def do_back(self) -> None:
@@ -95,7 +121,7 @@ class QNav(Nav):
         Navigate back to the initial state
         """
         self._ttt.episode_start()
-        self._last = [self._ttt.state_as_str(), self._ttt.x_agent_name()]
+        self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
         self._show(state=self._ttt.state().state_as_string())
         return
 
@@ -117,5 +143,7 @@ class QNav(Nav):
         """
         self._q_vals = QCalc(trace=self._trace,
                              ttt_event_stream=self._ttt_event_stream).calc_q(session_uuid=arg)
+        self._ttt.episode_start()
+        self._last = [self._ttt.state_as_str(), self._ttt.x_agent_name()]
         self.do_home()
         return

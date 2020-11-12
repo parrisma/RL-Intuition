@@ -14,17 +14,17 @@ class NavCmd(cmd.Cmd):
         self._nav = nav
         return
 
-    def do_0(self):
+    def do_0(self, arg):
         """Navigate to state as if taking action 0"""
         Nav.Action.action_0.do(self._nav)
         return
 
-    def do_1(self):
+    def do_1(self, arg):
         """Navigate to state as if taking action 1"""
         Nav.Action.action_1.do(self._nav)
         return
 
-    def do_2(self):
+    def do_2(self, arg):
         """Navigate to state as if taking action 2"""
         Nav.Action.action_2.do(self._nav)
         return

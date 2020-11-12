@@ -26,6 +26,7 @@ class TicTacToeEventStream:
 
     SESSION_UUID_Q = '{"query":{"term":{ "session_uuid":"<arg0>"}}}'
     EPISODE_UUID_Q = '{"query":{"term":{ "episode_uuid":"<arg0>"}}}'
+    SESSION_LIST_Q = '{"aggs":{"session_uuid_list": {"terms": {"field": "session_uuid.keyword"}}}}'
 
     def __init__(self,
                  es: Elasticsearch,
@@ -123,3 +124,20 @@ class TicTacToeEventStream:
         # Always return sorted in uuid & step order.
         res = sorted(res, key=lambda x: "{}{}".format(x.episode_uuid, x.episode_step))
         return res
+
+    def list_of_available_sessions(self):
+        """
+        Return a list of all the session_uuid for which there are ttt events
+        :return: List of session_uuid's
+        GET /ttt_event/_search
+        {
+            "aggs": {
+                "agg1": {
+                    "terms": {
+                        "field": "session_uuid.keyword"
+                            }
+                        }
+                }
+        }
+        """
+        return

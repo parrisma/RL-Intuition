@@ -114,7 +114,7 @@ class TicTacToe(Environment):
             self.__episode_end()
 
         self.__episode_uuid = UniqueRef().ref
-        self.__trace.log().info("Start Episode [{}]".format(self.__episode_uuid))
+        self.__trace.log().debug("Start Episode [{}]".format(self.__episode_uuid))
         self.__episode_step = 0
         self.__board = TicTacToe.__empty_board()
         self.__last_board = None
@@ -137,7 +137,7 @@ class TicTacToe(Environment):
         End the current episode.
         """
         if self.__episode_uuid is not None:
-            self.__trace.log().info("End Episode [{}]".format(self.__episode_uuid))
+            self.__trace.log().debug("End Episode [{}]".format(self.__episode_uuid))
             self.__episode_uuid = None
             self.__episode_step = 0
         return
@@ -147,7 +147,7 @@ class TicTacToe(Environment):
         End the current session
         """
         if self.__session_uuid is not None:
-            self.__trace.log().info("End Session [{}]".format(self.__session_uuid))
+            self.__trace.log().debug("End Session [{}]".format(self.__session_uuid))
             self.__episode_end()
             self.__session_uuid = None
         return
@@ -158,7 +158,7 @@ class TicTacToe(Environment):
         """
         self.__session_end()
         self.__session_uuid = self.__ttt_event_stream.session_uuid  # inherit same session uuid as event stream
-        self.__trace.log().info("Start Session [{}]".format(self.__session_uuid))
+        self.__trace.log().debug("Start Session [{}]".format(self.__session_uuid))
         return
 
     def run(self, num_episodes: int) -> List[str]:
@@ -176,7 +176,7 @@ class TicTacToe(Environment):
                 agent = self.__play_action(agent)
                 i = len(episodes)
                 if i % 500 == 0:
-                    self.__trace.log().info("Iteration: " + str(i))
+                    self.__trace.log().debug("Iteration: " + str(i))
 
             state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
             self.__x_agent.episode_complete(state)
@@ -261,8 +261,16 @@ class TicTacToe(Environment):
                                              state=state,
                                              action="{}".format(action),
                                              reward=reward,
-                                             episode_end=episode_end,
-                                             episode_outcome=episode_outcome)
+                                             episode_end=False,
+                                             episode_outcome=TicTacToeEvent.STEP)
+        if episode_end:
+            self.__ttt_event_stream.record_event(episode_uuid=self.__episode_uuid,
+                                                 episode_step=self.__episode_step,
+                                                 state=next_state,
+                                                 action="-1",
+                                                 reward=0,
+                                                 episode_end=episode_end,
+                                                 episode_outcome=episode_outcome)
         return
 
     def __id_to_agent(self,
@@ -300,13 +308,13 @@ class TicTacToe(Environment):
         """
         next_agent = None
         if action not in self.__actions_ids_left_to_take():
-            self.__trace.log().info("do_action ignored illegal action [{}] in state [{}]".
-                                    format(action,
-                                           self.state().state_as_string()))
+            self.__trace.log().debug("do_action ignored illegal action [{}] in state [{}]".
+                                     format(action,
+                                            self.state().state_as_string()))
         else:
             agent = self.__id_to_agent(agent_id)
             if agent is None:
-                self.__trace.log().info("do_action ignored unknown agent [{}]".format(agent_id))
+                self.__trace.log().debug("do_action ignored unknown agent [{}]".format(agent_id))
             else:
                 st = self.state_as_str()
                 if len(st) > 0:
