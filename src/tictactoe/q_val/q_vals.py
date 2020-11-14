@@ -15,8 +15,7 @@ class QVals:
     _b = ' '
     _fmt = "[{}][{}][{}]  [{}][{}][{}]  [{:12.6f}][{:12.6f}][{:12.6f}]  [{:5.2f}][{:5.2f}][{:5.2f}] "
     _sep = "_______________________________________________________________________________________"
-    _title = "Actions    Board                Raw Q Values                     Softmax     "
-
+    _title = " Actions     Board                Raw Q Values                     Softmax     "
     def __init__(self,
                  state: str,
                  x_as_str: str = '-1',

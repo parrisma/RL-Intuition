@@ -23,6 +23,7 @@ class Experiment3(ExperimentBase):
         """
         Allow command lined based load and exploration of saved TicTacToe events as resulting Q Values
         """
+        self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
         NavCmd(QNav(ttt=self._ttt,
                     ttt_event_stream=self._ttt_event_stream,
                     trace=self._trace)).cmdloop()

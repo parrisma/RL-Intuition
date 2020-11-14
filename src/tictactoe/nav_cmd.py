@@ -12,7 +12,7 @@ class NavCmd(cmd.Cmd):
                  nav: Nav):
         super().__init__()
         self._nav = nav
-        self.intro = "Type help for all commands or use [list] to see session id's you can then [load]"
+        self.intro = "\n\n\nType help for all commands or use [list] to see session id's you can then [load]"
         return
 
     def do_0(self, arg):

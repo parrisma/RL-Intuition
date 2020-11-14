@@ -73,7 +73,7 @@ class QNav(Nav):
         self._ttt.episode_start()  # ensure we are in a known state
         self._last = list()
         self._agent_name = self._ttt.x_agent_name()
-        self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
+        self._last.append([self._ttt.state_action_str(), "{}".format(self._agent_name)])
         return
 
     def do_action(self,
@@ -89,12 +89,12 @@ class QNav(Nav):
             if next_agent is not None:
                 if self._ttt.state().state_as_string() not in self._q_vals:
                     self._trace.log().info("- - - - - - [{}] not found in given Q Values".
-                                           format(self._ttt.state_as_str()))
+                                           format(self._ttt.state_action_str()))
                     st, agnt = self._last[-1]
                     self._ttt.import_state(st)
                     self._agent_name = agnt
                 else:
-                    self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
+                    self._last.append([self._ttt.state_action_str(), "{}".format(self._agent_name)])
                     self._agent_name = next_agent
                     self._show(state=self._ttt.state().state_as_string())
 
@@ -121,7 +121,7 @@ class QNav(Nav):
         Navigate back to the initial state
         """
         self._ttt.episode_start()
-        self._last.append([self._ttt.state_as_str(), "{}".format(self._agent_name)])
+        self._last.append([self._ttt.state_action_str(), "{}".format(self._agent_name)])
         self._show(state=self._ttt.state().state_as_string())
         return
 
@@ -163,7 +163,7 @@ class QNav(Nav):
                                  ttt_event_stream=self._ttt_event_stream).calc_q(session_uuid=uuid,
                                                                                  reprocess_count=reprocess_count)
             self._ttt.episode_start()
-            self._last = [self._ttt.state_as_str(), self._ttt.x_agent_name()]
+            self._last = [self._ttt.state_action_str(), self._ttt.x_agent_name()]
             self.do_home()
         return
 

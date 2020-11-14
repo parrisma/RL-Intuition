@@ -136,7 +136,7 @@ class TestTicTacToe(unittest.TestCase):
             self.assertEqual(expected_agent, next_agent)
             if next_agent is not None:
                 accrued_actions.append([agent_id, action])
-                st = ttt.state_as_str()
+                st = ttt.state_action_str()
                 for aa in accrued_actions:
                     agnt, actn = aa
                     self.assertTrue(st.find("{}:{}".format(agnt, actn)) != -1)
@@ -182,7 +182,7 @@ class TestTicTacToe(unittest.TestCase):
                 self.assertEqual(episodes[0], event.episode_uuid)
                 self.assertEqual(step, event.episode_step)
                 if not x_to_start:
-                    st = event.state.invert_player_perspective()
+                    st = event.state.invert_player_perspective()  # ToDo add to base State ?
                 else:
                     st = event.state
                 self.assertEqual(state_as_str, st.state_as_string())

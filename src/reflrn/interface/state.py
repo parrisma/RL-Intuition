@@ -3,41 +3,42 @@ import abc
 import numpy as np
 
 
-#
-# This abstract class provides an immutable State representation of the environment
-# it was constructed with.
-#
-
-
 class State(metaclass=abc.ABCMeta):
+    """
+    An immutable representation of an environment state
+    """
 
-    #
-    # An environment specific representation for Env. State
-    #
     @abc.abstractmethod
     def state(self) -> object:
+        """
+        An environment specific representation for Env. State
+        :return: state as object
+        """
         pass
 
     #
-    # An string representation of the environment curr_coords
+    #
     #
     @abc.abstractmethod
     def state_as_string(self) -> str:
+        """
+        The State rendered as string
+        :return: A string representation of the current state
+        """
         pass
 
-    #
-    # State encoded as a numpy array that can be passed as the X (input) into
-    # a Neural Net. The dimensionality can vary depending on the implementation
-    # from a linear vector for a simple Sequential model to an 3D array for a
-    # multi layer convolutional model.
-    #
-    @abc.abstractmethod
-    def state_as_array(self) -> np.ndarray:
-        pass
-
-    #
-    # Return the state in a form that can be passed directly to a NN
-    #
     @abc.abstractmethod
     def state_model_input(self) -> np.ndarray:
+        """
+        The State object rendered in numerical numpy.ndarray form compatible with the X input of a neural network.
+        Each board position is the numerical player id or zero if the position is empty
+        :return: The state as (1,9) numpy.ndarray
+        """
+        pass
+
+    def state_as_visualisation(self) -> str:
+        """
+        An easy to read visualisation of the state object for print and debug
+        :return: An easy to read string form of the current state
+        """
         pass

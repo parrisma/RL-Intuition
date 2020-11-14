@@ -1,18 +1,24 @@
 import numpy as np
 
-from lib.reflrn.interface.Agent import Agent
-from lib.reflrn.interface.State import State
+from src.reflrn.interface.agent import Agent
+from src.reflrn.interface.state import State
 
 
 class TicTacToeState(State):
+    """
+    Concrete implementation of the State object for TicTacToe
+    """
 
-    #
-    # Constructor.
-    #
     def __init__(self,
                  board: np.array,
                  agent_x: Agent,
                  agent_o: Agent):
+        """
+        Create a TicTacToe state object
+        :param board: The board state to initialse the State to
+        :param agent_x: The Agent playing as X
+        :param agent_o: The Agent playing as O
+        """
         self.board = None
         if board is not None:
             self.board = np.copy(board)  # State must be immutable
@@ -27,27 +33,31 @@ class TicTacToeState(State):
         self.agent_x = agent_x
         self.agent_o = agent_o
 
-    #
-    # An environment specific representation for Env. State
-    #
     def state(self) -> object:
+        """
+        The state object
+        :return: A Copy of the state object.
+        """
         return np.copy(self.board)
 
-    #
-    # Return the id of the other agent
-    #
     def __other(self,
                 agent_id: int) -> int:
+        """
+        The id of the next player given the current player
+        :param agent_id: The current player id
+        :return: The next player id
+        """
         if agent_id == self.x_id:
             return self.o_id
         elif agent_id == self.o_id:
             return self.x_id
         return agent_id
 
-    #
-    # Return a new state with an inverted player perspective of the board.
-    #
     def invert_player_perspective(self) -> State:
+        """
+        The board state with all player positions inverted
+        :return: The board with all player positions inverted
+        """
         brd = np.copy(self.board)
         shp = brd.shape
         brd = np.reshape(brd, np.size(brd))
@@ -57,10 +67,11 @@ class TicTacToeState(State):
                               agent_x=self.agent_x,
                               agent_o=self.agent_o)
 
-    #
-    # An string representation of the environment state
-    #
     def state_as_string(self) -> str:
+        """
+        The State rendered as string
+        :return: A string representation of the current state
+        """
         st = ""
         for cell in np.reshape(self.board, self.board.size):
             if np.isnan(cell):
@@ -69,10 +80,11 @@ class TicTacToeState(State):
                 st += str(int(cell))
         return st
 
-    #
-    # Render the board as human readable
-    #
     def state_as_visualisation(self) -> str:
+        """
+        An easy to read visualisation of the state object for print and debug
+        :return: An easy to read string form of the current state
+        """
         s = ""
         for i in range(0, 3):
             rbd = ""
@@ -83,8 +95,7 @@ class TicTacToeState(State):
                 else:
                     rbd += self.agents[self.board[i][j]]
                 rbd += "]"
-            s += rbd + "\n"
-        s += "\n"
+            s += rbd + " "
         return s
 
     def __str__(self):
@@ -100,15 +111,6 @@ class TicTacToeState(State):
         :return: Human readable state
         """
         return self.state_as_visualisation()
-
-    #
-    # State encoded as a numpy array that can be passed as the X (input) into
-    # a Neural Net.
-    #
-    def state_as_array(self) -> np.ndarray:
-        bc = np.copy(self.board)
-        bc[np.isnan(bc)] = self.unused
-        return bc
 
     def init_from_string(self, state_as_str) -> None:
         """
@@ -134,9 +136,9 @@ class TicTacToeState(State):
 
     def state_model_input(self) -> np.ndarray:
         """
-        Convert the state to the tensor form needed for model inout
-        :param state: State object
-        :return: state as numpy array
+        The State object rendered in numerical numpy.ndarray form compatable with the X input of a neural network.
+        Each board position is the numerical player id or zero if the position is empty
+        :return: The state as (1,9) numpy.ndarray
         """
         st = np.copy(self.board)
         st = st.reshape([1, 9])

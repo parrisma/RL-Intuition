@@ -16,7 +16,6 @@ from src.lib.uniqueref import UniqueRef
 
 class TicTacToe(Environment):
     # There are 5812 legal board states that can be reached before there is a winner
-    # http://brianshourd.com/posts/2012-11-06-tilt-number-of-tic-tac-toe-boards.html
     __env: Env
     __trace: Trace
     __ttt_event_stream: TicTacToeEventStream
@@ -124,7 +123,7 @@ class TicTacToe(Environment):
         self.__x_agent.episode_init(state)
         self.__o_agent.episode_init(state)
         if self._x_to_start is None:
-            agent = (self.__x_agent, self.__o_agent)[randint(0, 1)]
+            agent = [self.__x_agent, self.__o_agent][randint(0, 1)]
         else:
             if self._x_to_start:
                 agent = self.__x_agent
@@ -218,7 +217,10 @@ class TicTacToe(Environment):
         :param action: The action to play
         :param agent: The Agent playing teh action
         """
-        self.__episode_step += 1
+        if self.__episode_step is None:
+            self.__episode_step = 1
+        else:
+            self.__episode_step += 1
         self.__last_board = np.copy(self.__board)
         self.__last_agent = self.__agent
         self.__agent = agent
@@ -307,22 +309,32 @@ class TicTacToe(Environment):
         :return: The name of the next agent to play or None if the Agent/Action combo was illegal
         """
         next_agent = None
-        if action not in self.__actions_ids_left_to_take():
+        agent = self.__id_to_agent(agent_id)
+        if agent is None:
+            self.__trace.log().debug("do_action ignored unknown agent [{}]".
+                                     format(agent_id))
+        elif not self._legal_board_state():
+            self.__trace.log().debug("do_action ignored for action [{}] as state [{}] is illegal".
+                                     format(action,
+                                            self.state().state_as_string()))
+        elif action not in self.__actions_ids_left_to_take():
             self.__trace.log().debug("do_action ignored illegal action [{}] in state [{}]".
                                      format(action,
                                             self.state().state_as_string()))
         else:
-            agent = self.__id_to_agent(agent_id)
-            if agent is None:
-                self.__trace.log().debug("do_action ignored unknown agent [{}]".format(agent_id))
+            st = self.state_action_str()
+            if len(st) > 0:
+                new_st = "{}~{}:{}".format(st, agent.id(), action)
             else:
-                st = self.state_as_str()
-                if len(st) > 0:
-                    st = "{}~{}:{}".format(st, agent.id(), action)
-                else:
-                    st = "{}:{}".format(agent.id(), action)
-                self.__string_to_internal_state(st)
+                new_st = "{}:{}".format(agent.id(), action)
+            self.__string_to_internal_state(new_st)
+            if not self._legal_board_state():
+                self.__trace.log().debug("do_action ignored for action [{}] as state [{}] is illegal".
+                                         format(action,
+                                                self.state().state_as_string()))
+            else:
                 next_agent = (self.__next_agent[agent.name()]).name()
+                self.__last_agent = agent_id
         return next_agent
 
     def __play_action(self,
@@ -441,6 +453,7 @@ class TicTacToe(Environment):
         but just loaded directly as a board state.
         :param moves_as_str: The game state as structured text to load internally
         """
+        self.__board = TicTacToe.__empty_board()
         if len(moves_as_str) > 0:
             mvs = moves_as_str.split('~')
             if moves_as_str is not None:
@@ -466,7 +479,7 @@ class TicTacToe(Environment):
             mvs = mvs[:-1]
         return mvs
 
-    def state_as_str(self) -> str:
+    def state_action_str(self) -> str:
         """
         The current TicTacToe game state as a string
         :return: Game state as string
@@ -481,13 +494,16 @@ class TicTacToe(Environment):
         return self.__internal_state_to_string()
 
     def import_state(self,
-                     state_as_string: str):
+                     state_as_string: str,
+                     same_episode: bool = True):
         """
         Set game state to that of the structured text string
         :param state_as_string: The structured text from which to establish the game state
+        :param same_episode: If True then load state into the current episode else start a new episode
         :return:
         """
-        self.episode_start()
+        if not same_episode:
+            self.episode_start()
         self.__string_to_internal_state(state_as_string)
         return
 
@@ -513,6 +529,19 @@ class TicTacToe(Environment):
         :return: The name of the O Agent as string
         """
         return self.__o_agent.name()
+
+    def _legal_board_state(self) -> bool:
+        """
+        True if the current board state is legal else False.
+        Illegal board states can result from direct state imports where agents are not taking turns
+        :return: True if board state is legal else False.
+        """
+        num_x = np.sum(self.__board == self.__x_agent.id())
+        num_o = np.sum(self.__board == self.__o_agent.id())
+
+        # Number of X and O plays are always equal or 1 ahead
+        diff = np.abs(num_x - num_o)
+        return diff == 0 or diff == 1
 
     class IllegalActorAction(Exception):
         """

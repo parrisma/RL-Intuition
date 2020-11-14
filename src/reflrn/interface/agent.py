@@ -3,12 +3,10 @@ import abc
 from src.reflrn.interface.state import State
 
 
-#
-# This is an interface specification for a reinforcement learning agent
-#
-
-
 class Agent(metaclass=abc.ABCMeta):
+    """
+    An Agent that can participate in a reinforcement learning environment
+    """
     X_ID: int
     O_ID: int
     X_NAME: str
@@ -19,86 +17,79 @@ class Agent(metaclass=abc.ABCMeta):
     X_NAME = "X"
     O_NAME = "O"
 
-    #
-    # Immutable Id for the Agent
-    #
     @abc.abstractmethod
     def id(self) -> int:
+        """
+        The immutable numerical id of teh agent
+        :return: The id of the agent as int
+        """
         pass
 
-    #
-    # Immutable Name for the Agent
-    #
     @abc.abstractmethod
     def name(self) -> str:
+        """
+        The immutable name of the agent
+        :return: The name of teh agent as string
+        """
         pass
 
-    #
-    # Called by the environment *once* at the start of the session
-    # and the action set is given as dictionary
-    #
     @abc.abstractmethod
-    def session_init(self, actions: dict):
+    def session_init(self, actions: dict) -> None:
+        """
+        Called by the environment *once* at the start of the session and the action set is given as dictionary
+        :param actions: The actions the agent will be able to play in the environment it is being attached to
+        """
         pass
 
-    #
-    # Environment call back when environment shuts down
-    #
     @abc.abstractmethod
     def terminate(self,
-                  save_on_terminate: bool = False):
+                  save_on_terminate: bool = False) -> None:
+        """
+        Called by the environment *one* when environment shuts down
+        :param save_on_terminate:
+        """
         pass
 
-    #
-    # Environment call back when episode starts
-    #
     @abc.abstractmethod
-    def episode_init(self, state: State):
+    def episode_init(self, state: State) -> None:
+        """
+        Called by the environment at the start of every episode
+        :param state: The state as at the episode start
+        """
         pass
 
-    #
-    # Environment call back when episode reaches a terminal state
-    #
     @abc.abstractmethod
-    def episode_complete(self, state: State):
+    def episode_complete(self, state: State) -> None:
+        """
+        Called by the environment at the episode end (no more viable actions to play in given state)
+        :param state: The state as at the episode end
+        """
         pass
 
-    #
-    # Environment call back to ask the agent to chose an action
-    #
-    # State : The current curr_coords of the environment
-    # possible_actions : The set of possible actions the agent can play from this curr_coords
-    #
     @abc.abstractmethod
-    def choose_action(self, state: State, possible_actions: [int]) -> int:
+    def choose_action(self, state: State,
+                      possible_actions: [int]) -> int:
+        """
+        Called by the environment to ask for the action the agent will play in the given state
+        :param state: The state the agent is to play an action in
+        :param possible_actions: The allowable actions in the given state
+        :return: The action from the list if possible_actions the agent has chosen to play in the given state
+        """
         pass
 
-    #
-    # The callback via which the environment informs the agent of a reward as a result of an action.
-    # curr_coords     : The curr_coords *before* the action is taken : S
-    # next_state: The State after the action is taken : S'
-    # action    : The action that transitioned S to S'
-    # reward    : The reward for playing action in curr_coords S
-    # episode_complete : If environment is episodic, then true if the reward relates to the last reward in an episode.
-    #
     @abc.abstractmethod
     def reward(self,
                state: State,
                next_state: State,
                action: int,
                reward_for_play: float,
-               episode_complete: bool):
+               episode_complete: bool) -> None:
+        """
+        The callback via which the environment informs the agent of a reward as a result of an action.
+        :param state: The curr_coords *before* the action is taken : S
+        :param next_state: The State after the action is taken : S'
+        :param action: The action that transitioned S to S'
+        :param reward_for_play: The reward for playing action in curr_coords S
+        :param episode_complete: If environment is episodic, then true if the reward relates to the last reward in an episode.
+        """
         pass
-
-    #
-    # Produce debug details when performing operations such as action prediction.
-    #
-    @property
-    @abc.abstractmethod
-    def explain(self) -> bool:
-        raise NotImplementedError()
-
-    @explain.setter
-    @abc.abstractmethod
-    def explain(self, value: bool):
-        raise NotImplementedError()
