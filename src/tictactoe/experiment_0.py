@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import networkx as nx
 from src.tictactoe.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 from src.tictactoe.ttt_explore import Explore
@@ -24,6 +26,7 @@ class Experiment0(ExperimentBase):
                     trace=self._trace,
                     ttt_event_stream=self._ttt_event_stream)
         e.explore()
+        e.save(self._session_uuid)
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 
