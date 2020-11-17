@@ -13,6 +13,8 @@
 **/*.tlm
 **/*.pb
 **/*.h5
+**/*.yaml
+**/*.yml
 **/.ipynb_checkpoints
 **/.ipynb_checkpoints/*.ipynb
 **/__pycache__/*

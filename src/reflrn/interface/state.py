@@ -4,6 +4,8 @@ import numpy as np
 
 
 class State(metaclass=abc.ABCMeta):
+    POSITION_NOT_PLAYED = '0'
+
     """
     An immutable representation of an environment state
     """

@@ -1,13 +1,23 @@
 import numpy as np
-
+from typing import Dict
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.state import State
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 
 
 class TicTacToeState(State):
     """
     Concrete implementation of the State object for TicTacToe
     """
+    board: np.ndarray
+    x_id: int
+    o_id: int
+    x_name: str
+    o_name: str
+    agents: Dict
+    unused: float
+    agent_x: Agent
+    agent_o: Agent
 
     def __init__(self,
                  board: np.array,
@@ -15,7 +25,7 @@ class TicTacToeState(State):
                  agent_o: Agent):
         """
         Create a TicTacToe state object
-        :param board: The board state to initialse the State to
+        :param board: The board state to initialise the State to
         :param agent_x: The Agent playing as X
         :param agent_o: The Agent playing as O
         """
@@ -75,7 +85,7 @@ class TicTacToeState(State):
         st = ""
         for cell in np.reshape(self.board, self.board.size):
             if np.isnan(cell):
-                st += "0"
+                st += State.POSITION_NOT_PLAYED
             else:
                 st += str(int(cell))
         return st
@@ -118,6 +128,7 @@ class TicTacToeState(State):
         with [.] for an un played cell. There is no validation applied to the given board state
         :param state_as_str: State in string from to inti from.
         """
+        # ToDo this only works if agent id's are 1 & -1
         new_board = np.zeros(9)
         i = 0
         f = 1

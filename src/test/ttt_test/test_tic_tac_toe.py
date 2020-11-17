@@ -273,13 +273,66 @@ class TestTicTacToe(unittest.TestCase):
             self.assertTrue(self.__np_eq(tts.invert_player_perspective().state(), expected1))
         return
 
-    #
-    # Are the given arrays equal shape and element by element content. We allow nan = nan as equal.
-    #
+    def test_do_board_state_load_good_cases(self):
+        """
+        Test loading internal state from a board state
+        """
+        agent_x = TestAgent(-1, "X")
+        agent_o = TestAgent(1, "O")
+        ttt = TicTacToe(env=self._env,
+                        ttt_event_stream=self.__ttt_event_stream,
+                        x=agent_x,
+                        o=agent_o,
+                        x_to_start=True)
+        cases = [
+            ['000000000', TicTacToeEvent.STEP],
+            ['100000000', TicTacToeEvent.STEP],
+            ['-100000000', TicTacToeEvent.STEP],
+            ['-11-11-11-11-1', TicTacToeEvent.X_WIN],
+            ['1-11-11-11-11', TicTacToeEvent.O_WIN],
+            ['-1-111-1-1-111', TicTacToeEvent.DRAW],
+            ['11-1-1111-1-1', TicTacToeEvent.DRAW]
+        ]
+        for case in cases:
+            board_state_as_str, game_state = case
+            self.assertEqual(game_state, ttt.board_as_string_to_internal_state(board_state_as_str))
+            self.assertEqual(board_state_as_str, ttt.state().state_as_string())
+        return
+
+    def test_do_board_state_load_fail_cases(self):
+        """
+        Test loading internal state from a board state - failures
+        """
+        agent_x = TestAgent(-1, "X")
+        agent_o = TestAgent(1, "O")
+        ttt = TicTacToe(env=self._env,
+                        ttt_event_stream=self.__ttt_event_stream,
+                        x=agent_x,
+                        o=agent_o,
+                        x_to_start=True)
+        cases = [
+            '0000000000',  # Too many positions
+            '0000000',  # Too many positions
+            ' 100000000',  # Bad char -> space
+            '10+0000000',  # Bad char -> +
+            '111111111',  # illegal board state
+            '-1-1-1-1-1-1-1-1-1'  # illegal board state
+        ]
+        for case in cases:
+            with self.assertRaises(RuntimeError):
+                _ = ttt.board_as_string_to_internal_state(case)
+        return
+
     @classmethod
     def __np_eq(cls,
                 npa1: np.array,
                 npa2: np.array) -> bool:
+        """
+        Are the given arrays equal shape and element by element content. We allow nan = nan as equal.
+        :param npa1: Array 1 for the equality test
+        :param npa2: Array 2 for the equality test
+        :return: True if equal, (where nan = nan = True)
+        """
         if np.shape(npa1) != np.shape(npa2):
             return False
         v1 = np.reshape(npa1, np.size(npa1))
