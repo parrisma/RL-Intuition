@@ -1,17 +1,16 @@
 from typing import Tuple, Dict, List
 from random import randint
-
 import numpy as np
-
-from src.tictactoe.TicTacToeState import TicTacToeState
+from src.lib.envboot.env import Env
+from src.lib.rltrace.trace import Trace
+from src.lib.uniqueref import UniqueRef
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
-from src.lib.envboot.env import Env
+from src.tictactoe.TicTacToeState import TicTacToeState
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
-from src.lib.rltrace.trace import Trace
-from src.lib.uniqueref import UniqueRef
+from src.tictactoe.PlayerId import PlayerId
 
 
 class TicTacToe(Environment):
@@ -31,7 +30,7 @@ class TicTacToe(Environment):
     __next_agent: Dict
     __agents = Dict
 
-    play_reward = float(-1)  # reward for playing an action
+    step_reward = float(-1)  # reward for playing an action
     draw_reward = float(-10)  # reward for playing to end but no one wins
     win_reward = float(100)  # reward for winning a game
     __no_agent = None
@@ -241,7 +240,7 @@ class TicTacToe(Environment):
         :param other_agent: The agent the action was played against
         """
         episode_end = False
-        reward = self.play_reward
+        reward = self.step_reward
         episode_outcome = TicTacToeEvent.STEP
         if self.episode_complete():
             episode_end = True
@@ -369,6 +368,7 @@ class TicTacToe(Environment):
         The attributes of the current game state
         :return: Dictionary of attributes and their current values.
         """
+        # ToDo re-implement with the game_state method
         attr_dict = dict()
         attr_dict[TicTacToe.attribute_won[0]] = self.__episode_won()
         attr_dict[TicTacToe.attribute_draw[0]] = False
@@ -406,8 +406,22 @@ class TicTacToe(Environment):
                 return True
         return False
 
+    def game_step(self,
+                  board: np.ndarray = None) -> int:
+        """
+        The step number of the game 0 to 9
+        0 = no plays have been made
+        ...
+        9 = all plays have been made
+        :param board: If supplied return based on given board else use the internal board state
+        :return: The step number as integer in range 0 to 9
+        """
+        if board is None:
+            board = self.__board
+        return 9 - np.sum(np.isnan(board) * 1)
+
     def __actions_left_to_take(self,
-                               board=None) -> bool:
+                               board: np.ndarray = None) -> bool:
         """
         Return True if there are any actions left to take given the current board state
         :param board: If supplied return based on given board else use the internal board state
@@ -418,7 +432,7 @@ class TicTacToe(Environment):
         return board[np.isnan(board)].size > 0
 
     def __actions_ids_left_to_take(self,
-                                   board=None) -> np.array:
+                                   board: np.ndarray = None) -> np.array:
         """
         The possible game actions remaining given the board state
         :param board: If given the actions for the given board else return actions for internal board state
@@ -447,7 +461,7 @@ class TicTacToe(Environment):
         return False
 
     def __string_to_internal_state(self,
-                                   moves_as_str) -> None:
+                                   moves_as_str: str) -> None:
         """
         Establish current game state to match that of the given structured text string. The steps are not simulated
         but just loaded directly as a board state.
@@ -499,7 +513,7 @@ class TicTacToe(Environment):
         new_board = np.zeros(9)
         x_id_as_str = str(self.__x_agent.id())
         o_id_as_str = str(self.__o_agent.id())
-        all_chars = "{}{}{}".format(x_id_as_str, State.POSITION_NOT_PLAYED, o_id_as_str)
+        all_chars = "{}{}{}".format(x_id_as_str, PlayerId.none.as_str(), o_id_as_str)
         pos = 0
         st = ""
         for c in board_as_str:
@@ -511,7 +525,7 @@ class TicTacToe(Environment):
                 raise RuntimeError("Illegal Id in cell should be [{},{},{}] but given [{}]".
                                    format(x_id_as_str,
                                           o_id_as_str,
-                                          State.POSITION_NOT_PLAYED,
+                                          PlayerId.none.as_str(),
                                           c))
             if st == x_id_as_str:
                 new_board[pos] = self.__x_agent.id()
@@ -521,7 +535,7 @@ class TicTacToe(Environment):
                 new_board[pos] = self.__o_agent.id()
                 st = ""
                 pos += 1
-            elif st == State.POSITION_NOT_PLAYED:
+            elif st == PlayerId.none.as_str():
                 new_board[pos] = self.empty_cell
                 st = ""
                 pos += 1

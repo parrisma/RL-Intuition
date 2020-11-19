@@ -166,12 +166,12 @@ class TestTicTacToe(unittest.TestCase):
             self.assertEqual(1, len(episodes))
             events = self.__ttt_event_stream.get_session(session_uuid=self._session_id)
             expected_results = [
-                [1, '000000000', 0, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [2, '-100000000', 8, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [3, '-100000001', 2, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [4, '-10-1000001', 1, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [5, '-11-1000001', 6, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [6, '-11-1000-101', 4, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
+                [1, '000000000', 0, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [2, '-100000000', 8, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [3, '-100000001', 2, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [4, '-10-1000001', 1, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [5, '-11-1000001', 6, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [6, '-11-1000-101', 4, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
                 [7, '-11-1010-101', 3, TicTacToe.win_reward, True, res]]
             episode_events = list()
             for event in events:
@@ -214,14 +214,14 @@ class TestTicTacToe(unittest.TestCase):
             self.assertEqual(1, len(episodes))
             events = self.__ttt_event_stream.get_session(session_uuid=self._session_id)
             expected_results = [
-                [1, '000000000', 0, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [2, '-100000000', 1, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [3, '-110000000', 2, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [4, '-11-1000000', 4, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [5, '-11-1010000', 3, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [6, '-11-1-110000', 5, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [7, '-11-1-111000', 7, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
-                [8, '-11-1-1110-10', 6, TicTacToe.play_reward, False, TicTacToeEvent.STEP],
+                [1, '000000000', 0, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [2, '-100000000', 1, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [3, '-110000000', 2, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [4, '-11-1000000', 4, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [5, '-11-1010000', 3, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [6, '-11-1-110000', 5, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [7, '-11-1-111000', 7, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [8, '-11-1-1110-10', 6, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
                 [9, '-11-1-1111-10', 8, TicTacToe.draw_reward, True, res]]
             episode_events = list()
             for event in events:
@@ -285,18 +285,27 @@ class TestTicTacToe(unittest.TestCase):
                         o=agent_o,
                         x_to_start=True)
         cases = [
-            ['000000000', TicTacToeEvent.STEP],
-            ['100000000', TicTacToeEvent.STEP],
-            ['-100000000', TicTacToeEvent.STEP],
-            ['-11-11-11-11-1', TicTacToeEvent.X_WIN],
-            ['1-11-11-11-11', TicTacToeEvent.O_WIN],
-            ['-1-111-1-1-111', TicTacToeEvent.DRAW],
-            ['11-1-1111-1-1', TicTacToeEvent.DRAW]
+            ['1-10-1100-11', TicTacToeEvent.STEP, 6],
+            ['000000000', TicTacToeEvent.STEP, 0],
+            ['100000000', TicTacToeEvent.STEP, 1],
+            ['-100000000', TicTacToeEvent.STEP, 1],
+            ['-110000000', TicTacToeEvent.STEP, 2],
+            ['-110001000', TicTacToeEvent.STEP, 3],
+            ['-11000100-1', TicTacToeEvent.STEP, 4],
+            ['-11100100-1', TicTacToeEvent.STEP, 5],
+            ['-1110010-1-1', TicTacToeEvent.STEP, 6],
+            ['-1111010-1-1', TicTacToeEvent.STEP, 7],
+            ['-1111-110-1-1', TicTacToeEvent.X_WIN, 8],
+            ['-11-11-11-11-1', TicTacToeEvent.X_WIN, 9],
+            ['1-11-11-11-11', TicTacToeEvent.O_WIN, 9],
+            ['-1-111-1-1-111', TicTacToeEvent.DRAW, 9],
+            ['11-1-1111-1-1', TicTacToeEvent.DRAW, 9]
         ]
         for case in cases:
-            board_state_as_str, game_state = case
+            board_state_as_str, game_state, step_num = case
             self.assertEqual(game_state, ttt.board_as_string_to_internal_state(board_state_as_str))
             self.assertEqual(board_state_as_str, ttt.state().state_as_string())
+            self.assertEqual(step_num, ttt.game_step())
         return
 
     def test_do_board_state_load_fail_cases(self):

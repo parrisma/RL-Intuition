@@ -1,4 +1,5 @@
 from src.reflrn.interface.state import State
+from src.tictactoe.BoardState import BoardState
 
 
 class TicTacToeEvent:
@@ -13,10 +14,10 @@ class TicTacToeEvent:
     episode_end: bool
     episode_outcome: str
 
-    X_WIN = "x-win"
-    O_WIN = "o-win"
-    DRAW = "draw"
-    STEP = "step"
+    X_WIN = BoardState.x_win.as_str()
+    O_WIN = BoardState.o_win.as_str()
+    DRAW = BoardState.draw.as_str()
+    STEP = BoardState.step.as_str()
 
     def __init__(self,
                  episode_uuid: str,

@@ -4,17 +4,15 @@ import numpy as np
 
 
 class State(metaclass=abc.ABCMeta):
-    POSITION_NOT_PLAYED = '0'
-
     """
     An immutable representation of an environment state
     """
 
     @abc.abstractmethod
-    def state(self) -> object:
+    def state(self) -> np.ndarray:
         """
         An environment specific representation for Env. State
-        :return: state as object
+        :return: state represented as a numpy array
         """
         pass
 

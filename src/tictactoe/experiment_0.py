@@ -1,8 +1,10 @@
 from typing import Dict
 import networkx as nx
+import logging
 from src.tictactoe.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 from src.tictactoe.ttt_explore import Explore
+from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 
 
 class Experiment0(ExperimentBase):
@@ -81,7 +83,24 @@ class Experiment0(ExperimentBase):
 
         load_test = True
         if load_test:
+            self._trace.log().setLevel(logging.INFO)
+            analysis = dict()
             v = e.load_visits_from_yaml(session_uuid="fb5c87fb96d244249b9b453f5a059438", dir_to_use="./scratch")
+            for s in v:
+                self._ttt.board_as_string_to_internal_state(s)
+                game_step = self._ttt.game_step()
+                if game_step not in analysis:
+                    analysis[game_step] = [0, 0, 0, 0]
+                analysis[game_step][0] += 1
+                game_state = self._ttt.game_state()
+                self._trace.log().info("State {} Step {} GStat {}".format(s, game_step, game_state))
+                if game_state == TicTacToeEvent.O_WIN:
+                    analysis[game_step][1] += 1
+                elif game_state == TicTacToeEvent.X_WIN:
+                    analysis[game_step][2] += 1
+                elif game_state == TicTacToeEvent.DRAW:
+                    analysis[game_step][3] += 1
+
             g = e.load_graph_from_yaml(session_uuid="fb5c87fb96d244249b9b453f5a059438", dir_to_use="./scratch")
             # g = e.load_graph_from_yaml(session_uuid="all_ttt")
             attrs = dict()

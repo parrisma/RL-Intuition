@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.state import State
-from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
+from src.tictactoe.PlayerId import PlayerId
 
 
 class TicTacToeState(State):
@@ -85,7 +85,7 @@ class TicTacToeState(State):
         st = ""
         for cell in np.reshape(self.board, self.board.size):
             if np.isnan(cell):
-                st += State.POSITION_NOT_PLAYED
+                st += PlayerId.none.as_str()
             else:
                 st += str(int(cell))
         return st
@@ -147,7 +147,7 @@ class TicTacToeState(State):
 
     def state_model_input(self) -> np.ndarray:
         """
-        The State object rendered in numerical numpy.ndarray form compatable with the X input of a neural network.
+        The State object rendered in numerical numpy.ndarray form compatible with the X input of a neural network.
         Each board position is the numerical player id or zero if the position is empty
         :return: The state as (1,9) numpy.ndarray
         """
