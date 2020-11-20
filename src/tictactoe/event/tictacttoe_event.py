@@ -1,5 +1,5 @@
-from src.reflrn.interface.state import State
 from src.tictactoe.BoardState import BoardState
+from src.tictactoe.TicTacToeState import TicTacToeState
 
 
 class TicTacToeEvent:
@@ -8,7 +8,7 @@ class TicTacToeEvent:
     """
     episode_uuid: str
     episode_step: int
-    state: State
+    state: TicTacToeState
     action: str
     reward: float
     episode_end: bool
@@ -22,7 +22,7 @@ class TicTacToeEvent:
     def __init__(self,
                  episode_uuid: str,
                  episode_step: int,
-                 state: State,
+                 state: TicTacToeState,
                  action: str,
                  reward: float,
                  episode_end: bool,

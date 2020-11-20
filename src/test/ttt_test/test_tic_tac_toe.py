@@ -222,7 +222,8 @@ class TestTicTacToe(unittest.TestCase):
                 [6, '-11-1-110000', 5, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
                 [7, '-11-1-111000', 7, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
                 [8, '-11-1-1110-10', 6, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
-                [9, '-11-1-1111-10', 8, TicTacToe.draw_reward, True, res]]
+                [9, '-11-1-1111-10', 8, TicTacToe.step_reward, False, TicTacToeEvent.STEP],
+                [10, '-11-1-1111-1-1', -1, TicTacToe.draw_reward, True, TicTacToeEvent.DRAW]]
             episode_events = list()
             for event in events:
                 if event.episode_uuid == episodes[0]:
@@ -285,7 +286,7 @@ class TestTicTacToe(unittest.TestCase):
                         o=agent_o,
                         x_to_start=True)
         cases = [
-            ['1-10-1100-11', TicTacToeEvent.STEP, 6],
+            ['1-10-1100-11', TicTacToeEvent.O_WIN, 6],
             ['000000000', TicTacToeEvent.STEP, 0],
             ['100000000', TicTacToeEvent.STEP, 1],
             ['-100000000', TicTacToeEvent.STEP, 1],

@@ -1,16 +1,19 @@
-from typing import Tuple, Dict, List
 from random import randint
+from typing import Tuple, Dict, List
+
 import numpy as np
+
 from src.lib.envboot.env import Env
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
+from src.tictactoe.PlayerId import PlayerId
 from src.tictactoe.TicTacToeState import TicTacToeState
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
-from src.tictactoe.PlayerId import PlayerId
+from src.tictactoe.BoardState import BoardState
 
 
 class TicTacToe(Environment):
@@ -239,6 +242,7 @@ class TicTacToe(Environment):
         :param agent: The agent that played the action
         :param other_agent: The agent the action was played against
         """
+        #ToDo re write using __episode_state directly
         episode_end = False
         reward = self.step_reward
         episode_outcome = TicTacToeEvent.STEP
@@ -368,43 +372,53 @@ class TicTacToe(Environment):
         The attributes of the current game state
         :return: Dictionary of attributes and their current values.
         """
-        # ToDo re-implement with the game_state method
         attr_dict = dict()
-        attr_dict[TicTacToe.attribute_won[0]] = self.__episode_won()
-        attr_dict[TicTacToe.attribute_draw[0]] = False
-        if not attr_dict[TicTacToe.attribute_won[0]]:
-            attr_dict[TicTacToe.attribute_draw[0]] = not self.__actions_left_to_take()
+        e_state = self.__episode_state()
+        attr_dict[TicTacToe.attribute_won[0]] = e_state == BoardState.o_win or e_state == BoardState.x_win
+        attr_dict[TicTacToe.attribute_draw[0]] = e_state == BoardState.draw
         attr_dict[TicTacToe.attribute_complete[0]] = \
             attr_dict[TicTacToe.attribute_draw[0]] or attr_dict[TicTacToe.attribute_won[0]]
         attr_dict[TicTacToe.attribute_agent[0]] = self.__agent
         attr_dict[TicTacToe.attribute_board[0]] = np.copy(self.__board)
         return attr_dict
 
-    def __episode_won(self,
-                      board=None) -> bool:
+    def __episode_state(self,
+                        board=None) -> BoardState:
         """
-        Return True if the current board has a winning row on it.
-        :param board: If supplied return based on given board else use the internal board state
-        :return: True if board has a winning move on it.
+        Return the state of the episode X-WIN, O-WIN, DRAW, STEP
+        :param board: 3 by 3 numpy array - if supplied return based on given board else use the internal board state
+        :return: Return the state of the episode X-WIN, O-WIN, DRAW, STEP
         """
         if board is None:
             board = self.__board
-        rows = np.abs(np.sum(board, axis=1))
-        cols = np.abs(np.sum(board, axis=0))
-        diag_lr = np.abs(np.sum(board.diagonal()))
-        diag_rl = np.abs(np.sum(np.rot90(board).diagonal()))
+        brd = list()
+        brd.extend(np.nansum(board, axis=1).tolist())  # Rows
+        brd.extend(np.nansum(board, axis=0).tolist())  # Cols
+        brd.append(np.nansum(board.diagonal()))
+        brd.append(np.nansum(np.rot90(board).diagonal()).tolist())
+        o_win = 3 * self.__o_agent.id()
+        x_win = 3 * self.__x_agent.id()
 
-        if np.sum(rows == 3) > 0:
-            return True
-        if np.sum(cols == 3) > 0:
-            return True
-        if not np.isnan(diag_lr):
-            if ((np.mod(diag_lr, 3)) == 0) and diag_lr > 0:
-                return True
-        if not np.isnan(diag_rl):
-            if ((np.mod(diag_rl, 3)) == 0) and diag_rl > 0:
-                return True
-        return False
+        for v in brd:
+            if v == o_win:
+                return BoardState.o_win
+            elif v == x_win:
+                return BoardState.x_win
+
+        if np.nansum(np.abs(board)) == 9:
+            return BoardState.draw
+
+        return BoardState.step
+
+    def __episode_won(self,
+                      board=None) -> bool:
+        """
+        Return True if the current board has a winning row, col or diagonal on it.
+        :param board: If supplied return based on given board else use the internal board state
+        :return: True if board has a winning move on it.
+        """
+        e_state = self.__episode_state(board=board)
+        return e_state == BoardState.x_win or e_state == BoardState.o_win
 
     def game_step(self,
                   board: np.ndarray = None) -> int:
@@ -456,9 +470,7 @@ class TicTacToe(Environment):
         else:
             board = self.__board
 
-        if self.__episode_won(board) or not self.__actions_left_to_take(board):
-            return True
-        return False
+        return self.__episode_state(board=board) != BoardState.step
 
     def __string_to_internal_state(self,
                                    moves_as_str: str) -> None:
@@ -477,29 +489,16 @@ class TicTacToe(Environment):
                         self.__take_action(int(ps), self.__agents[int(pl)])
         return
 
-    def game_state(self) -> str:
+    def game_state(self) -> BoardState:
         """
         What is the current state of the board
         STEP - In progress
         DRAW - Over and drawn
         X-WIN - Over with X as winner
         O-WIN - Over with O as winner
-        :return: TicTacToeEvent state as string STEP, DRAW, O-WIN, X-WIN
+        :return: BoardState state : STEP, DRAW, O-WIN, X-WIN
         """
-        num_x = np.sum(self.__board == self.__x_agent.id())
-        num_o = np.sum(self.__board == self.__o_agent.id())
-        game_st = None
-        if self.__episode_won():
-            if num_o > num_x:
-                game_st = TicTacToeEvent.O_WIN
-            else:
-                game_st = TicTacToeEvent.X_WIN
-        elif not self.__actions_left_to_take():
-            game_st = TicTacToeEvent.DRAW
-        else:
-            game_st = TicTacToeEvent.STEP
-
-        return game_st
+        return self.__episode_state()
 
     def board_as_string_to_internal_state(self,
                                           board_as_str: str) -> str:
@@ -545,7 +544,7 @@ class TicTacToe(Environment):
         if not self.legal_board_state():
             raise RuntimeError("Board state is not a legal board state [{}]".format(board_as_str))
 
-        return self.game_state()
+        return self.game_state().as_str()
 
     def __internal_state_to_string(self) -> str:
         """
