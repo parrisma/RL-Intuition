@@ -7,7 +7,7 @@ from src.lib.settings import Settings
 from src.lib.webstream import WebStream
 from src.lib.envboot.runspec import RunSpec
 from src.lib.elastic.esutil import ESUtil
-from src.tictactoe.tttenvbuilder import TTTEnvBuilder
+from src.tictactoe.experiment.experiment_env_builder import ExperimentEnvBuilder
 
 
 class TestTTTEnvBuilder(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestTTTEnvBuilder(unittest.TestCase):
         :return:
         """
         self._trace.log().info("Test 1")
-        ttteb = TTTEnvBuilder(TestTTTEnvBuilder._env.get_context())
+        ttteb = ExperimentEnvBuilder(TestTTTEnvBuilder._env.get_context())
         ttteb.execute(purge=False)
         self.assertEqual(True,
                          ESUtil.index_exists(TestTTTEnvBuilder._es, TestTTTEnvBuilder._settings.ttt_event_index_name))

@@ -4,8 +4,8 @@ from src.lib.rltrace.trace import Trace
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
 from src.lib.webstream import WebStream
-from src.tictactoe.interface.nav import Nav
-from src.tictactoe.nav_cmd import NavCmd
+from src.tictactoe.interface.actionnav import ActionNav
+from src.tictactoe.experiment.action_nav_cmd import ActionNavCmd
 from src.test.nav.dummy_nav import DummyNav
 
 
@@ -41,23 +41,23 @@ class TestNav(unittest.TestCase):
         self._trace.log().info("- - - - - - C A S E {} Passed - - - - - -".format(TestNav._run))
         return
 
-    def test_actions(self):
-        test_cases = [[Nav.ActionCmd.action_0_cmd, Nav.Action.action_0, None],
-                      [Nav.ActionCmd.action_1_cmd, Nav.Action.action_1, None],
-                      [Nav.ActionCmd.action_2_cmd, Nav.Action.action_2, None],
-                      [Nav.ActionCmd.action_3_cmd, Nav.Action.action_3, None],
-                      [Nav.ActionCmd.action_4_cmd, Nav.Action.action_4, None],
-                      [Nav.ActionCmd.action_5_cmd, Nav.Action.action_5, None],
-                      [Nav.ActionCmd.action_6_cmd, Nav.Action.action_6, None],
-                      [Nav.ActionCmd.action_7_cmd, Nav.Action.action_7, None],
-                      [Nav.ActionCmd.action_8_cmd, Nav.Action.action_8, None],
-                      [Nav.ActionCmd.action_9_cmd, Nav.Action.action_9, None],
-                      [Nav.ActionCmd.action_back_cmd, Nav.Action.action_back, None],
-                      [Nav.ActionCmd.action_home_cmd, Nav.Action.action_home, None],
-                      [Nav.ActionCmd.action_switch_cmd, Nav.Action.action_switch, None],
-                      [Nav.ActionCmd.action_load_cmd, Nav.Action.action_load, "session_uuid"]]
+    def test_action_nav(self):
+        test_cases = [[ActionNav.ActionCmd.cmd_0, ActionNav.Action.action_0, None],
+                      [ActionNav.ActionCmd.cmd_1, ActionNav.Action.action_1, None],
+                      [ActionNav.ActionCmd.cmd_2, ActionNav.Action.action_2, None],
+                      [ActionNav.ActionCmd.cmd_3, ActionNav.Action.action_3, None],
+                      [ActionNav.ActionCmd.cmd_4, ActionNav.Action.action_4, None],
+                      [ActionNav.ActionCmd.cmd_5, ActionNav.Action.action_5, None],
+                      [ActionNav.ActionCmd.cmd_6, ActionNav.Action.action_6, None],
+                      [ActionNav.ActionCmd.cmd_7, ActionNav.Action.action_7, None],
+                      [ActionNav.ActionCmd.cmd_8, ActionNav.Action.action_8, None],
+                      [ActionNav.ActionCmd.cmd_9, ActionNav.Action.action_9, None],
+                      [ActionNav.ActionCmd.cmd_back, ActionNav.Action.back, None],
+                      [ActionNav.ActionCmd.cmd_home, ActionNav.Action.home, None],
+                      [ActionNav.ActionCmd.cmd_switch, ActionNav.Action.switch, None],
+                      [ActionNav.ActionCmd.cmd_load, ActionNav.Action.load, "session_uuid"]]
         dummy_nav = DummyNav(trace=self._trace)
-        nav_cmd = NavCmd(dummy_nav)
+        nav_cmd = ActionNavCmd(dummy_nav)
         for case in test_cases:
             cmd, expected, arg = case
             if arg is not None:
@@ -66,6 +66,9 @@ class TestNav(unittest.TestCase):
                 cmd_line = cmd.value
             nav_cmd.onecmd(cmd_line)
             self.assertEqual(expected, dummy_nav.last_action)
+        return
+
+    def test_level_nav(self):
         return
 
 

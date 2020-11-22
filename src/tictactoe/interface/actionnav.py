@@ -2,28 +2,28 @@ import abc
 from enum import Enum, IntEnum, unique
 
 
-class Nav(metaclass=abc.ABCMeta):
+class ActionNav(metaclass=abc.ABCMeta):
     """
     A Navigation Interface for classes that support navigation of TicTacToe data structures by action
     """
 
     @unique
     class ActionCmd(Enum):
-        action_0_cmd = "0"
-        action_1_cmd = "1"
-        action_2_cmd = "2"
-        action_3_cmd = "3"
-        action_4_cmd = "4"
-        action_5_cmd = "5"
-        action_6_cmd = "6"
-        action_7_cmd = "7"
-        action_8_cmd = "8"
-        action_9_cmd = "9"
-        action_back_cmd = "back"
-        action_home_cmd = "home"
-        action_load_cmd = "load"
-        action_switch_cmd = "switch"
-        action_list = "list"
+        cmd_0 = "0"
+        cmd_1 = "1"
+        cmd_2 = "2"
+        cmd_3 = "3"
+        cmd_4 = "4"
+        cmd_5 = "5"
+        cmd_6 = "6"
+        cmd_7 = "7"
+        cmd_8 = "8"
+        cmd_9 = "9"
+        cmd_back = "back"
+        cmd_home = "home"
+        cmd_load = "load"
+        cmd_switch = "switch"
+        cmd_list = "list"
 
     @unique
     class Action(IntEnum):
@@ -37,11 +37,11 @@ class Nav(metaclass=abc.ABCMeta):
         action_7 = 7
         action_8 = 8
         action_9 = 9
-        action_back = -1
-        action_home = -2
-        action_load = -3
-        action_switch = -4
-        action_list = -5
+        back = -1
+        home = -2
+        load = -3
+        switch = -4
+        list = -5
 
         def __init__(self,
                      action: int):
@@ -50,17 +50,17 @@ class Nav(metaclass=abc.ABCMeta):
             return
 
         def do(self,
-               nav: 'Nav',
-               arg=None):
-            if self.value == Nav.Action.action_back:
+               nav: 'ActionNav',
+               args=None):
+            if self.value == ActionNav.Action.back:
                 return nav.do_back()
-            if self.value == Nav.Action.action_home:
+            if self.value == ActionNav.Action.home:
                 return nav.do_home()
-            if self.value == Nav.Action.action_load:
-                return nav.do_load(arg)
-            if self.value == Nav.Action.action_switch:
+            if self.value == ActionNav.Action.load:
+                return nav.do_load(args)
+            if self.value == ActionNav.Action.switch:
                 return nav.do_switch()
-            if self.value == Nav.Action.action_list:
+            if self.value == ActionNav.Action.list:
                 return nav.do_list()
             return nav.do_action(self._action)
 

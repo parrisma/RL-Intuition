@@ -2,7 +2,7 @@ from enum import IntEnum, unique
 
 
 @unique
-class PlayerId(IntEnum):
+class TicTacToePlayerId(IntEnum):
     """
     Numerical Id's of Players (Agents) in TicTacToe
     """

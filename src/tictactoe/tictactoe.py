@@ -9,11 +9,11 @@ from src.lib.uniqueref import UniqueRef
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
-from src.tictactoe.PlayerId import PlayerId
-from src.tictactoe.TicTacToeState import TicTacToeState
+from src.tictactoe.tictactoe_playerid import TicTacToePlayerId
+from src.tictactoe.tictactoe_state import TicTacToeState
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
-from src.tictactoe.BoardState import BoardState
+from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
 
 
 class TicTacToe(Environment):
@@ -242,7 +242,7 @@ class TicTacToe(Environment):
         :param agent: The agent that played the action
         :param other_agent: The agent the action was played against
         """
-        #ToDo re write using __episode_state directly
+        # ToDo re write using __episode_state directly
         episode_end = False
         reward = self.step_reward
         episode_outcome = TicTacToeEvent.STEP
@@ -374,8 +374,9 @@ class TicTacToe(Environment):
         """
         attr_dict = dict()
         e_state = self.__episode_state()
-        attr_dict[TicTacToe.attribute_won[0]] = e_state == BoardState.o_win or e_state == BoardState.x_win
-        attr_dict[TicTacToe.attribute_draw[0]] = e_state == BoardState.draw
+        attr_dict[
+            TicTacToe.attribute_won[0]] = e_state == TicTacToeBoardState.o_win or e_state == TicTacToeBoardState.x_win
+        attr_dict[TicTacToe.attribute_draw[0]] = e_state == TicTacToeBoardState.draw
         attr_dict[TicTacToe.attribute_complete[0]] = \
             attr_dict[TicTacToe.attribute_draw[0]] or attr_dict[TicTacToe.attribute_won[0]]
         attr_dict[TicTacToe.attribute_agent[0]] = self.__agent
@@ -383,7 +384,7 @@ class TicTacToe(Environment):
         return attr_dict
 
     def __episode_state(self,
-                        board=None) -> BoardState:
+                        board=None) -> TicTacToeBoardState:
         """
         Return the state of the episode X-WIN, O-WIN, DRAW, STEP
         :param board: 3 by 3 numpy array - if supplied return based on given board else use the internal board state
@@ -401,14 +402,14 @@ class TicTacToe(Environment):
 
         for v in brd:
             if v == o_win:
-                return BoardState.o_win
+                return TicTacToeBoardState.o_win
             elif v == x_win:
-                return BoardState.x_win
+                return TicTacToeBoardState.x_win
 
         if np.nansum(np.abs(board)) == 9:
-            return BoardState.draw
+            return TicTacToeBoardState.draw
 
-        return BoardState.step
+        return TicTacToeBoardState.step
 
     def __episode_won(self,
                       board=None) -> bool:
@@ -418,7 +419,7 @@ class TicTacToe(Environment):
         :return: True if board has a winning move on it.
         """
         e_state = self.__episode_state(board=board)
-        return e_state == BoardState.x_win or e_state == BoardState.o_win
+        return e_state == TicTacToeBoardState.x_win or e_state == TicTacToeBoardState.o_win
 
     def game_step(self,
                   board: np.ndarray = None) -> int:
@@ -426,13 +427,13 @@ class TicTacToe(Environment):
         The step number of the game 0 to 9
         0 = no plays have been made
         ...
-        9 = all plays have been made
+        8 = all plays have been made
         :param board: If supplied return based on given board else use the internal board state
-        :return: The step number as integer in range 0 to 9
+        :return: The step number as integer in range 0 to 8
         """
         if board is None:
             board = self.__board
-        return 9 - np.sum(np.isnan(board) * 1)
+        return 8 - np.sum(np.isnan(board) * 1)
 
     def __actions_left_to_take(self,
                                board: np.ndarray = None) -> bool:
@@ -470,7 +471,7 @@ class TicTacToe(Environment):
         else:
             board = self.__board
 
-        return self.__episode_state(board=board) != BoardState.step
+        return self.__episode_state(board=board) != TicTacToeBoardState.step
 
     def __string_to_internal_state(self,
                                    moves_as_str: str) -> None:
@@ -489,7 +490,7 @@ class TicTacToe(Environment):
                         self.__take_action(int(ps), self.__agents[int(pl)])
         return
 
-    def game_state(self) -> BoardState:
+    def game_state(self) -> TicTacToeBoardState:
         """
         What is the current state of the board
         STEP - In progress
@@ -512,7 +513,7 @@ class TicTacToe(Environment):
         new_board = np.zeros(9)
         x_id_as_str = str(self.__x_agent.id())
         o_id_as_str = str(self.__o_agent.id())
-        all_chars = "{}{}{}".format(x_id_as_str, PlayerId.none.as_str(), o_id_as_str)
+        all_chars = "{}{}{}".format(x_id_as_str, TicTacToePlayerId.none.as_str(), o_id_as_str)
         pos = 0
         st = ""
         for c in board_as_str:
@@ -524,7 +525,7 @@ class TicTacToe(Environment):
                 raise RuntimeError("Illegal Id in cell should be [{},{},{}] but given [{}]".
                                    format(x_id_as_str,
                                           o_id_as_str,
-                                          PlayerId.none.as_str(),
+                                          TicTacToePlayerId.none.as_str(),
                                           c))
             if st == x_id_as_str:
                 new_board[pos] = self.__x_agent.id()
@@ -534,7 +535,7 @@ class TicTacToe(Environment):
                 new_board[pos] = self.__o_agent.id()
                 st = ""
                 pos += 1
-            elif st == PlayerId.none.as_str():
+            elif st == TicTacToePlayerId.none.as_str():
                 new_board[pos] = self.empty_cell
                 st = ""
                 pos += 1

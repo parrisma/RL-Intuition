@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 from src.lib.envboot.env import Env
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.TicTacToe import TicTacToe
-from src.tictactoe.TicTacToeState import TicTacToeState
+from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.tictactoe_state import TicTacToeState
 from src.test.ttt_test.test_agent import TestAgent
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
@@ -11,15 +11,13 @@ from src.lib.webstream import WebStream
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 from src.lib.uniqueref import UniqueRef
-from src.tictactoe.TicTacToeStateFactory import TicTacToeStateFactory
-
-
-#
-# Unit Test Suite for the TicTacToe concrete implementation of an Environment.
-#
+from src.tictactoe.tictactoe_state_factory import TicTacToeStateFactory
 
 
 class TestTicTacToe(unittest.TestCase):
+    """
+    Unit Test Suite for the TicTacToe concrete implementation of an Environment.
+    """
     _run: int
     _env: Env
     _trace: Trace
@@ -35,7 +33,11 @@ class TestTicTacToe(unittest.TestCase):
         return
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
+        """
+        Boostrap the TicTacToe environment including the event stream linked to elastic Db for
+        recording all game events & logs.
+        """
         cls._env = Env()
         cls._trace = cls._env.get_trace()
         cls._run_spec = cls._env.get_context()[EnvBuilder.RunSpecificationContext]
@@ -51,11 +53,17 @@ class TestTicTacToe(unittest.TestCase):
         return
 
     def setUp(self) -> None:
+        """
+        Set up called for every Test Case, log the test case start
+        """
         TestTicTacToe._run += 1
         self._trace.log().debug("- - - - - - C A S E {} Start - - - - - -".format(TestTicTacToe._run))
         return
 
     def tearDown(self) -> None:
+        """
+        Set up called at every Test Case end, log the test case start
+        """
         self._trace.log().debug("- - - - - - C A S E {} Passed - - - - - -".format(TestTicTacToe._run))
         return
 
@@ -89,7 +97,7 @@ class TestTicTacToe(unittest.TestCase):
             del ttt
         return
 
-    def test_2(self):
+    def test_tictactoe_environment_import_export(self):
         self._trace.log().info("Test case for TicTacToe environment import / export")
         test_cases = ("", "1:0", "-1:0", "-1:1",
                       "-1:0~1:2~-1:4~1:6~-1:8",

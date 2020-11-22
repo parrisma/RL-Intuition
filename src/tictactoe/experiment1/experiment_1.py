@@ -1,4 +1,4 @@
-from src.tictactoe.experiment_base import ExperimentBase
+from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 
 

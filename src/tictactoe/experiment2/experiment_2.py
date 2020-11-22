@@ -1,4 +1,4 @@
-from src.tictactoe.experiment_base import ExperimentBase
+from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.session_stats import SessionStats
 from src.tictactoe.dummy_agent import DummyAgent
 

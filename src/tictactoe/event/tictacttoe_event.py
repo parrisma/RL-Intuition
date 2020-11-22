@@ -1,5 +1,5 @@
-from src.tictactoe.BoardState import BoardState
-from src.tictactoe.TicTacToeState import TicTacToeState
+from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
+from src.tictactoe.tictactoe_state import TicTacToeState
 
 
 class TicTacToeEvent:
@@ -14,10 +14,10 @@ class TicTacToeEvent:
     episode_end: bool
     episode_outcome: str
 
-    X_WIN = BoardState.x_win.as_str()
-    O_WIN = BoardState.o_win.as_str()
-    DRAW = BoardState.draw.as_str()
-    STEP = BoardState.step.as_str()
+    X_WIN = TicTacToeBoardState.x_win.as_str()
+    O_WIN = TicTacToeBoardState.o_win.as_str()
+    DRAW = TicTacToeBoardState.draw.as_str()
+    STEP = TicTacToeBoardState.step.as_str()
 
     def __init__(self,
                  episode_uuid: str,

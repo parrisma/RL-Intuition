@@ -1,14 +1,14 @@
 from typing import Dict, List
 import numpy as np
-from src.tictactoe.interface.nav import Nav
+from src.tictactoe.interface.actionnav import ActionNav
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.TicTacToe import TicTacToe
+from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.q_val.q_vals import QVals
 from src.tictactoe.q_val.q_calc import QCalc
 
 
-class QNav(Nav):
+class QNav(ActionNav):
     """
     Navigate a dictionary of Q-Values. The given action moves from current state to the state resulting from
     the action.

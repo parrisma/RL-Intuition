@@ -2,7 +2,7 @@ from enum import IntEnum, unique
 
 
 @unique
-class BoardState(IntEnum):
+class TicTacToeBoardState(IntEnum):
     """
     The possible game states of a TicTacToe board
     """

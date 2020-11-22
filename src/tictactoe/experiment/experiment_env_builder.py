@@ -8,7 +8,7 @@ from src.lib.elastic.esutil import ESUtil
 from src.lib.webstream import WebStream
 
 
-class TTTEnvBuilder(EnvBuilder):
+class ExperimentEnvBuilder(EnvBuilder):
     _context: Dict
     _settings: Settings
     _context: Dict

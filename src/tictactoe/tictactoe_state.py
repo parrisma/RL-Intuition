@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.state import State
-from src.tictactoe.PlayerId import PlayerId
+from src.tictactoe.tictactoe_playerid import TicTacToePlayerId
 
 
 class TicTacToeState(State):
@@ -85,7 +85,7 @@ class TicTacToeState(State):
         st = ""
         for cell in np.reshape(self.board, self.board.size):
             if np.isnan(cell):
-                st += PlayerId.none.as_str()
+                st += TicTacToePlayerId.none.as_str()
             else:
                 st += str(int(cell))
         return st

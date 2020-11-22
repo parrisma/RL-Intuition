@@ -2,7 +2,7 @@ import numpy as np
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.state import State
 from src.reflrn.interface.state_factory import StateFactory
-from src.tictactoe.TicTacToeState import TicTacToeState
+from src.tictactoe.tictactoe_state import TicTacToeState
 
 
 class TicTacToeStateFactory(StateFactory):

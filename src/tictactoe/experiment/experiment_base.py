@@ -7,9 +7,9 @@ from src.lib.uniqueref import UniqueRef
 from src.reflrn.interface.experiment import Experiment
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.agent_factory import AgentFactory
-from src.tictactoe.TicTacToeStateFactory import TicTacToeStateFactory
+from src.tictactoe.tictactoe_state_factory import TicTacToeStateFactory
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.TicTacToe import TicTacToe
+from src.tictactoe.tictactoe import TicTacToe
 
 
 class ExperimentBase(Experiment):

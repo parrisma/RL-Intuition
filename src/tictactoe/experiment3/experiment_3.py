@@ -1,7 +1,7 @@
-from src.tictactoe.experiment_base import ExperimentBase
+from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 from src.tictactoe.q_val.q_nav import QNav
-from src.tictactoe.nav_cmd import NavCmd
+from src.tictactoe.experiment.action_nav_cmd import ActionNavCmd
 
 
 class Experiment3(ExperimentBase):
@@ -24,9 +24,9 @@ class Experiment3(ExperimentBase):
         Allow command lined based load and exploration of saved TicTacToe events as resulting Q Values
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        NavCmd(QNav(ttt=self._ttt,
-                    ttt_event_stream=self._ttt_event_stream,
-                    trace=self._trace)).cmdloop()
+        ActionNavCmd(QNav(ttt=self._ttt,
+                          ttt_event_stream=self._ttt_event_stream,
+                          trace=self._trace)).cmdloop()
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 
