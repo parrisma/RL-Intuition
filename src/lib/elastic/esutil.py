@@ -158,8 +158,10 @@ class ESUtil:
             json_query_to_delete = ESUtil.json_insert_args(json_source=json_query, **kwargs)
             # Exception will indicate delete error.
             es.delete_by_query(index=idx_name,
-                               body=json_query_to_delete)
+                               body=json_query_to_delete,
+                               refresh='true')
         except Exception as e:
+            print(e.msg)
             raise RuntimeError(
                 "Failed to execute delete by query [{}] on Index [{}]".format(json_query, idx_name))
         return
