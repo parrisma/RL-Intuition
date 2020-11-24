@@ -50,7 +50,7 @@ class RandomPlayAgent(Agent):
         Callback for agent to process notification of termination
         :param save_on_terminate: If True agent should save its state on exit
         """
-        self._trace.log().info("Agent notified of termination => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Agent notified of termination => {}:{}".format(self._id, self._name))
         return
 
     def episode_init(self, state: State) -> None:

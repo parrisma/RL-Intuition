@@ -1,28 +1,32 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
-from src.tictactoe.session_stats import SessionStats
-from src.tictactoe.dummy_agent import DummyAgent
+from src.tictactoe.random_play_agent import RandomPlayAgent
+from src.tictactoe.q_val.q_nav import QNav
+from src.tictactoe.experiment.action_nav_cmd import ActionNavCmd
 
 
 class Experiment2(ExperimentBase):
     """
-    This Experiment runs simple analysis based on a large number of Random plays.
+    This Experiment does not play games in the TicTacToe environment, instead it loads game data from experiment 1
+    and does a brute force calculation of Q Values by state.
 
-    Doing this simple analysis will expose the nature and complexities of the data generated such that
-    in future experiments we can account for these challenges as the progressively increase the sophistication
-    of our RL solution.
+    There is no Epsilon (discovery) factor as we are reading 'canned' random game data back from ttt_events, where
+    every action was selected at random by the agents.
     """
 
     def __init__(self):
-        super().__init__(DummyAgent.DummyAgentFactory())
+        # Needed to bootstrap the base environment but not used in this experiment so just use
+        # random agent arbitrarily.
+        super().__init__(RandomPlayAgent.RandomAgentFactory())
         return
 
     def run(self) -> None:
         """
-        Run the experiment where two random agents play against each other
+        Allow command lined based load and exploration of saved TicTacToe events as resulting Q Values
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        events = self._ttt_event_stream.get_session(session_uuid="efed07a7c7f542c08bde825027308e8a")
-        session_stats = SessionStats(events)
+        ActionNavCmd(QNav(ttt=self._ttt,
+                          ttt_event_stream=self._ttt_event_stream,
+                          trace=self._trace)).cmdloop()
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 

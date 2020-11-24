@@ -9,6 +9,9 @@ from src.lib.rltrace.trace import Trace
 
 
 class ElasticEnvBuilder(EnvBuilder):
+    """
+    Container to bootstrap and manage an elastic-db session
+    """
     _es: Elasticsearch
     _settings: Settings
     _context: Dict
@@ -17,6 +20,10 @@ class ElasticEnvBuilder(EnvBuilder):
 
     def __init__(self,
                  context: Dict):
+        """
+        Extract relevant settings from global context and boot-strap from nominated YAML config
+        :param context: The global context in which the Elastic connection is being bootstrapped and used.
+        """
         self._context = context
         self._trace = self._context[EnvBuilder.TraceContext]
         self._run_spec = self._context[EnvBuilder.RunSpecificationContext]
@@ -51,7 +58,15 @@ class ElasticEnvBuilder(EnvBuilder):
         return "55cd885be0004c6d84857c9cd260e417"
 
     def __str__(self) -> str:
+        """
+        A string representation of the environment
+        :return: A string representation
+        """
         return "Elastic Environment Builder - Id: {}".format(self.uuid())
 
     def __repr__(self):
+        """
+        A string representation of the environment for inspection & debug
+        :return: A string representation
+        """
         return self.__str__()

@@ -54,7 +54,7 @@ class DummyAgent(Agent):
         Callback for agent to process notification of termination
         :param save_on_terminate: If True agent should save its state on exit
         """
-        self._trace.log().info("Dummy Agent notified of termination => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Dummy Agent notified of termination => {}:{}".format(self._id, self._name))
         return
 
     def episode_init(self, state: State) -> None:
@@ -62,7 +62,7 @@ class DummyAgent(Agent):
         Callback for agent to process notification of a new episode
         :param state: The opening state of the episode
         """
-        self._trace.log().info("Dummy Agent notified of episode start => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Dummy Agent notified of episode start => {}:{}".format(self._id, self._name))
         return
 
     def episode_complete(self, state: State) -> None:
@@ -70,7 +70,7 @@ class DummyAgent(Agent):
         Callback for agent to process notification of episode completion
         :param state: The state at as episode completion
         """
-        self._trace.log().info("Dummy Agent notified of episode completion => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Dummy Agent notified of episode completion => {}:{}".format(self._id, self._name))
         return
 
     def choose_action(self, state: State, possible_actions: [int]) -> int:
@@ -80,7 +80,7 @@ class DummyAgent(Agent):
         :param possible_actions: The possible actions left to play
         :return: The action to play as an int
         """
-        self._trace.log().info("Dummy Agent asked to select action to play => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Dummy Agent asked to select action to play => {}:{}".format(self._id, self._name))
         return possible_actions[np.random.randint(len(possible_actions))]
 
     def reward(self,
@@ -97,7 +97,7 @@ class DummyAgent(Agent):
         :param reward_for_play: The reward given to teh agent for playing action in state
         :param episode_complete: True if the next_state represents a terminal state
         """
-        self._trace.log().info("Dummy Agent notified of reward => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Dummy Agent notified of reward => {}:{}".format(self._id, self._name))
         return
 
     def session_init(self,
@@ -106,7 +106,7 @@ class DummyAgent(Agent):
         Callback to allow agent to process the initialisation of a session
         :param actions: The actions that will be supported by the session
         """
-        self._trace.log().info("Dummy Agent notified of session init => {}:{}".format(self._id, self._name))
+        self._trace.log().debug("Dummy Agent notified of session init => {}:{}".format(self._id, self._name))
         return
 
     def __str__(self):

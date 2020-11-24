@@ -26,7 +26,8 @@ class TicTacToeEventStream:
 
     SESSION_UUID_Q = '{"query":{"term":{ "session_uuid":"<arg0>"}}}'
     EPISODE_UUID_Q = '{"query":{"term":{ "episode_uuid":"<arg0>"}}}'
-    SESSION_LIST_Q = '{"aggs":{"<arg0>": {"terms": {"field": "session_uuid.keyword"}}}}'
+    SESSION_LIST_Q = '{"size": 0,"aggs": {"session_uuid_list": {"terms": {"field": "session_uuid.keyword", "order": {"ts": "desc"}},"aggs": {"ts": {"max": {"field": "timestamp"}}}}}}'
+    SESSION_COUNT_Q = '{"query":{"term": {"session_uuid":"<arg0>"}}}'
 
     def __init__(self,
                  es: Elasticsearch,
@@ -103,7 +104,8 @@ class TicTacToeEventStream:
             ttt_events_as_json = ESUtil.run_search(es=self._es,
                                                    idx_name=self._es_index,
                                                    json_query=self.SESSION_UUID_Q,
-                                                   arg0=session_uuid)
+                                                   arg0=session_uuid,
+                                                   refresh='true')
             res = list()
             for jer in ttt_events_as_json:
                 event_as_json = jer['_source']
@@ -134,8 +136,26 @@ class TicTacToeEventStream:
             ttt_session_uuids = ESUtil.run_search_agg(es=self._es,
                                                       idx_name=self._es_index,
                                                       json_query=self.SESSION_LIST_Q,
-                                                      arg0='session_uuid_list')
+                                                      arg0='session_uuid_list',
+                                                      refresh='true')
         except Exception as e:
             raise RuntimeError(
                 "Get session uuids failed with exception [{}]".format(str(e)))
         return ttt_session_uuids
+
+    def count_session(self,
+                      session_uuid: str) -> int:
+        """
+        Return the number of events held for the give session uuid
+        :param session_uuid: The session UUID to count
+        :return: The number of events in the session UUID or None if no such session UUID
+        """
+        try:
+            ttt_session_count = ESUtil.run_count(es=self._es,
+                                                 idx_name=self._es_index,
+                                                 json_query=self.SESSION_COUNT_Q,
+                                                 arg0=session_uuid)
+        except Exception as e:
+            raise RuntimeError(
+                "Get session count failed with exception [{}]".format(str(e)))
+        return ttt_session_count

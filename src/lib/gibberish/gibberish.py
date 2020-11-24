@@ -2,6 +2,9 @@ import numpy as np
 
 
 class Gibberish:
+    """
+    Generate random text that can be used for testing where text is needed
+    """
     _gibber_words = ["spark", "obsequious", "embarrassed", "mushy", "current", "garrulous", "pine", "humdrum", "handy",
                      "lumpy", "route", "hallowed", "butter", "curl", "grieving", "cruel", "oranges", "uptight", "fact",
                      "exultant", "flood", "terrify", "bone", "bottle", "colossal", "farm", "ruddy", "woman",
@@ -42,8 +45,16 @@ class Gibberish:
 
     @staticmethod
     def more_gibber() -> str:
+        """
+        Select a random sequence of words
+        :return: A random sequence of words
+        """
         return Gibberish._gibber[np.random.randint(Gibberish._gibberish_length, size=1)[0]]
 
     @staticmethod
     def word_gibber() -> str:
+        """
+        Select a single random word
+        :return: A random word
+        """
         return Gibberish._gibber_words[np.random.randint(Gibberish._gibber_word_length, size=1)[0]]

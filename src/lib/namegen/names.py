@@ -2,6 +2,9 @@ import numpy as np
 
 
 class Names:
+    """
+    Arbitrary proper nouns
+    """
     _names = ["Earl",
               "Annmarie",
               "Edmundo",
@@ -104,4 +107,8 @@ class Names:
 
     @staticmethod
     def random_name() -> str:
+        """
+        A randomly selected proper-noun
+        :return: A proper noun
+        """
         return Names._names[np.random.randint(Names._names_length, size=1)[0]]

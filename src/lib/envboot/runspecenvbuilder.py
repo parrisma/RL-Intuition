@@ -6,6 +6,10 @@ import os
 
 
 class RunSpecEnvBuilder(EnvBuilder):
+    """
+    Bootstrap environment by extracting details from environment variables and using those to
+    load settings YAML
+    """
     _run_spec: RunSpec
     _context: Dict
     _trace: Trace

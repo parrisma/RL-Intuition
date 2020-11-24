@@ -9,9 +9,10 @@ from src.lib.settings import Settings
 from src.lib.streams.filestream import FileStream
 
 
-# todo: bootstrap from a YML file.
-
 class RunSpec:
+    """
+    Locate, Load and Parse environment specific YAML settings files.
+    """
     # Annotation
     _settings: Settings
     _spec_file: str
@@ -57,10 +58,18 @@ class RunSpec:
                                  getattr(self._settings, "{}_ttt_yml".format(self._spec)))
 
     def get_spec(self) -> str:
+        """
+        Get the name of the current run-specification e.g. environment name
+        :return: The name of the current run spec as string
+        """
         return self._spec
 
     def set_spec(self,
                  spec: str) -> None:
+        """
+        Set the give spec as the current run spec if it can be found from the YAML that was loaded
+        :param spec: The name of the spec to set as the current run spec.
+        """
         if hasattr(self._settings, spec):
             if callable(getattr(self._settings, self._spec)):
                 self._spec = spec
@@ -70,7 +79,11 @@ class RunSpec:
             raise ValueError("No such run spec {} has been loaded from the yaml config".format(spec))
         return
 
-    def _git_current_branch(self):
+    def _git_current_branch(self) -> None:
+        """
+        establish the current git branch for the shell in which the process is running & record as
+        a memeber variable
+        """
         res = subprocess.check_output("git rev-parse --abbrev-ref HEAD").decode('utf-8')
         if res is None or len(res) == 0:
             res = "Warning cannot establish current git branch"
@@ -80,14 +93,28 @@ class RunSpec:
         return
 
     def branch_transformer(self) -> Transformer.Transform:
+        """
+        Transformer that can be used to replace the placeholder <git-branch> with the actual name of
+        git branch in a sequence of text
+        :return: The Transformer
+        """
         return Transformer.Transform(regular_expression='.*<git-branch>.*',
                                      transform=lambda s: s.replace('<git-branch>', self.branch(), 1))
 
     def current_branch_transformer(self) -> Transformer.Transform:
+        """
+        Transformer that can be used to replace the placeholder <current-git-branch> with the actual name of
+        current git branch in a sequence of text
+        :return: The Transformer
+        """
         return Transformer.Transform(regular_expression='.*<current-git-branch>.*',
                                      transform=lambda s: s.replace('<current-git-branch>', self.current_branch(), 1))
 
     def setting_transformers(self) -> List[Transformer.Transform]:
+        """
+        List of text transformers to be applied to YAML as it is loaded.
+        :return: List of Tramsformers to apply in the sequence they appear in the list
+        """
         return [self.branch_transformer(),
                 self.current_branch_transformer()]
 

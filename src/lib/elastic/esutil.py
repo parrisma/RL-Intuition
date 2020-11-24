@@ -7,6 +7,9 @@ from elasticsearch import Elasticsearch
 
 
 class ESUtil:
+    """
+    High level wrapper on for the Python Elasticsearch library
+    """
     # Annotations
     _es: Dict[str, Elasticsearch]
 
@@ -18,14 +21,30 @@ class ESUtil:
     MATCH_ALL = '{"query":{"match_all": {}}}}'
 
     class ElasticDateFormatter(ABC):
+        """
+        (Inner) Abstract Base Class to manage Elastic search date formatting
+        """
 
         @abstractmethod
         def format(self, dtm) -> str:
+            """
+            Format given date time as string
+            :param dtm: The date time to format
+            :return: The date time as string
+            """
             pass
 
     class DefaultElasticDateFormatter(ElasticDateFormatter):
+        """
+        (Inner) Class to format data time as expected by Elastic search for Timestamps
+        """
 
         def format(self, dtm) -> str:
+            """
+            The date time as string in form compatible with use as an elastic timestamp
+            :param dtm: The date time to format
+            :return: The date time as string in form compatible with use as an elastic timestamp
+            """
             if isinstance(dtm, float):
                 dtm = datetime.fromtimestamp(dtm)
             elif not isinstance(dtm, datetime):
@@ -35,6 +54,11 @@ class ESUtil:
 
         @staticmethod
         def _elastic_time_format(dt: datetime) -> str:
+            """
+            Format date as time stamp that is timezone aware
+            :param dt: The data to format
+            :return: time stamp that is timezone aware as string
+            """
             return dt.strftime('%Y-%m-%dT%H:%M:%S.%f%z')
 
     @classmethod

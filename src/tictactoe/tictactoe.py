@@ -176,8 +176,8 @@ class TicTacToe(Environment):
             while not self.episode_complete():
                 agent = self.__play_action(agent)
                 i = len(episodes)
-                if i % 500 == 0:
-                    self.__trace.log().debug("Iteration: " + str(i))
+            if i % max(1, int(num_episodes / 10)) == 0:
+                self.__trace.log().info("Iteration: " + str(i))
 
             state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
             self.__x_agent.episode_complete(state)

@@ -2,6 +2,9 @@ import numpy as np
 
 
 class Verbs:
+    """
+    Arbitrary verbs
+    """
     _verbs = ["Abashing",
               "Abating",
               "Abiding",
@@ -517,4 +520,8 @@ class Verbs:
 
     @staticmethod
     def random_verb() -> str:
+        """
+        A randomly selected verb
+        :return: A Verb
+        """
         return Verbs._verbs[np.random.randint(Verbs._verbs_length, size=1)[0]]

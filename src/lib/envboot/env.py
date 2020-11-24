@@ -44,6 +44,10 @@ class Env:
 
     @classmethod
     def get_context(cls) -> Dict:
+        """
+        Get the dictionary if environment context settings as key - vals.
+        :return: The context dictionary of key-values
+        """
         if cls._context is None:
             raise RuntimeError("Environment is not running cannot get context")
         return cls._context
@@ -83,6 +87,10 @@ class Env:
 
     @classmethod
     def get_trace(cls) -> Trace:
+        """
+        Get the Trace object that trace events are logged via.
+        :return: The Trace Object for event logging
+        """
         if EnvBuilder.TraceContext not in cls.get_context():
             raise ValueError("Env context does not (yet) contain a Trace Context")
         # noinspection PyTypeChecker
