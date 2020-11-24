@@ -19,7 +19,8 @@ class TraceEnvBuilder(EnvBuilder):
         Execute actions to build the element of the environment owned by this builder
         :return: None: Implementation should throw and exception to indicate failure
         """
-        self._trace = Trace(session_uuid=self._context[EnvBuilder.EnvSessionUUID])
+        self._trace = Trace(session_uuid=self._context[EnvBuilder.EnvSessionUUID],
+                            log_level=self._context[EnvBuilder.LogLevel])
         self._context[EnvBuilder.TraceContext] = self._trace
         self._trace.log().info("Invoked : {}".format(str(self)))
         return

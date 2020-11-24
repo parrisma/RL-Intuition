@@ -56,12 +56,12 @@ class Explore:
         """
         List all visits files in the given directory
         :param dir_to_use:
-        :return: List of matching visit file names
+        :return: List of matching visit file names: The oldest + 10 newest
         """
         visit_files = list()
         for f in sorted(glob.glob(self.VISITS_FILE.format(dir_to_use, "*")), key=os.path.getmtime, reverse=True):
             visit_files.append(f)
-        return visit_files
+        return [*visit_files[:10], visit_files[-1]]
 
     def list_graph_files(self,
                          dir_to_use: str = '.') -> List[str]:

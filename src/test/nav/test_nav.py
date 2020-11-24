@@ -3,7 +3,7 @@ from src.lib.envboot.env import Env
 from src.lib.rltrace.trace import Trace
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
-from src.lib.webstream import WebStream
+from src.lib.streams.webstream import WebStream
 from src.tictactoe.interface.actionnav import ActionNav
 from src.tictactoe.experiment.action_nav_cmd import ActionNavCmd
 from src.test.nav.dummy_nav import DummyNav

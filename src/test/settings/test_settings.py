@@ -4,7 +4,7 @@ import socket
 from datetime import datetime
 from src.lib.rltrace.trace import Trace
 from src.lib.settings import Settings
-from src.lib.filestream import FileStream
+from src.lib.streams.filestream import FileStream
 from src.lib.transformer import Transformer
 
 

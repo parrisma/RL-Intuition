@@ -3,6 +3,7 @@ import sys
 from src.lib.uniqueref import UniqueRef
 from src.lib.rltrace.elasticformatter import ElasticFormatter
 from src.lib.rltrace.elastichandler import ElasticHandler
+from src.lib.envboot.log_level import LogLevel
 
 
 class Trace:
@@ -18,25 +19,33 @@ class Trace:
     _ELASTIC_FORMATTER = ElasticFormatter()
 
     def __init__(self,
-                 session_uuid: str = None):
+                 session_uuid: str = None,
+                 log_level: LogLevel = LogLevel.new()):
+        """
+        Establish trace logging
+        :param session_uuid: The session UUID to report trace messages as originating from
+        :param log_level: The initial loggin level
+        """
         if session_uuid is None or len(session_uuid) == 0:
             session_uuid = UniqueRef().ref
         self._session_uuid = session_uuid
         self._elastic_handler = None
         self._console_handler = None
         self._logger = None
-        self._bootstrap(session_uuid)
+        self._bootstrap(session_uuid=session_uuid,
+                        log_level=log_level)
         return
 
     def _bootstrap(self,
-                   session_uuid: str) -> None:
+                   session_uuid: str,
+                   log_level: LogLevel) -> None:
         """
         Create a logger and enable the default console logger
         :param session_uuid: The session uuid to use as the name of the logger
         """
         if self._logger is None:
             self._logger = logging.getLogger(session_uuid)
-            self._logger.setLevel(logging.DEBUG)
+            log_level.set(self._logger)
             self._logger.propagate = False  # Ensure only added handlers log i.e. disable parent logging handler
             self.enable_console_handler()
         return

@@ -5,7 +5,7 @@ from src.lib.settings import Settings
 from src.lib.envboot.runspec import RunSpec
 from src.lib.rltrace.trace import Trace
 from src.lib.elastic.esutil import ESUtil
-from src.lib.webstream import WebStream
+from src.lib.streams.webstream import WebStream
 
 
 class ExperimentEnvBuilder(EnvBuilder):

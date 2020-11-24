@@ -3,7 +3,7 @@ from src.interface.envbuilder import EnvBuilder
 from src.lib.rltrace.trace import Trace
 from src.lib.rltrace.tracereport import TraceReport
 from src.lib.rltrace.elastichandler import ElasticHandler
-from src.lib.webstream import WebStream
+from src.lib.streams.webstream import WebStream
 from src.lib.settings import Settings
 from src.lib.elastic.esutil import ESUtil
 from src.lib.envboot.runspec import RunSpec

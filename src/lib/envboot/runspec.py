@@ -6,7 +6,7 @@ import subprocess
 import os
 from src.lib.transformer import Transformer
 from src.lib.settings import Settings
-from src.lib.filestream import FileStream
+from src.lib.streams.filestream import FileStream
 
 
 # todo: bootstrap from a YML file.

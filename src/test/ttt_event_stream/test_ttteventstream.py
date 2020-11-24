@@ -7,7 +7,7 @@ from src.lib.uniqueref import UniqueRef
 from src.lib.envboot.env import Env
 from src.lib.rltrace.trace import Trace
 from src.lib.settings import Settings
-from src.lib.webstream import WebStream
+from src.lib.streams.webstream import WebStream
 from src.lib.envboot.runspec import RunSpec
 from src.lib.elastic.esutil import ESUtil
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream

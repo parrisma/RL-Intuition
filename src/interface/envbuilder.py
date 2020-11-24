@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from src.lib.purevirtual import purevirtual
+from src.lib.abc.purevirtual import purevirtual
 
 
 class EnvBuilder(ABC):
@@ -15,6 +15,7 @@ class EnvBuilder(ABC):
     RunSpecificationContext = 'RunSpecification'
     ElasticDbConnectionContext = 'ElasticConnection'
     Purge = 'Purge'
+    LogLevel = 'LogLevel'
 
     @abstractmethod
     @purevirtual

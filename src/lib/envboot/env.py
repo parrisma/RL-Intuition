@@ -7,6 +7,7 @@ from src.lib.rltrace.traceenvbuilder import TraceEnvBuilder
 from src.lib.envboot.runspecenvbuilder import RunSpecEnvBuilder
 from src.lib.elastic.elasticenvbuilder import ElasticEnvBuilder
 from src.lib.rltrace.traceelasticenvbuilder import TraceElasticEnvBuilder
+from src.lib.envboot.log_level import LogLevel
 
 
 class Env:
@@ -23,6 +24,7 @@ class Env:
 
     @classmethod
     def __init__(cls,
+                 log_level: LogLevel = LogLevel.new(),
                  purge: bool = False,
                  name: str = None):
         if cls._context is None:
@@ -33,7 +35,7 @@ class Env:
             if name is None or len(name) == 0:
                 cls._name = NameGen.generate_random_name()
             cls._context[EnvBuilder.EnvName] = cls._name
-
+            cls._context[EnvBuilder.LogLevel] = log_level
             cls._bootstrap(bool(cls._context[EnvBuilder.Purge]))
         else:
             if name is not None:
@@ -82,7 +84,7 @@ class Env:
     @classmethod
     def get_trace(cls) -> Trace:
         if EnvBuilder.TraceContext not in cls.get_context():
-            raise ValueError("Ebv context does not (yet) contain a Trace Context")
+            raise ValueError("Env context does not (yet) contain a Trace Context")
         # noinspection PyTypeChecker
         return cls._context[EnvBuilder.TraceContext]
 

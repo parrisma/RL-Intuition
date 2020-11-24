@@ -24,7 +24,7 @@ class ExploreNav(StateNav):
 
     LOAD_FMT = "command is <load {} session_id> or <load {} session_id>"
     LIST_FMT = "command is <list {}> or <list {}>"
-    LVL_FMT = "Level [{:1.0f}] with [{:4.0f}] states, [{:4.0f}] Won, [{:4.0f}] Lost and [{:4.0f}] drawn Min [{:4.0f}] Max [{:4.0f}] Mean [{:6.2f}] StdDev [{:6.3f}]"
+    LVL_FMT = "Level [{:1.0f}] with [{:4.0f}] states, [{:4.0f}] Won, [{:4.0f}] Lost [{:4.0f}] drawn: Visits - Min [{:4.0f}] Max [{:4.0f}] Mean [{:7.2f}] StdDev [{:7.3f}] CVar [{:5.3f}]"
 
     _sep: str = "_____________________________________________________________________"
 
@@ -70,6 +70,8 @@ class ExploreNav(StateNav):
         Number of states and number of Win/Lose/Draw
         :param level: The level to show summary for
         """
+        coefficient_of_variation = self._visit_summary[level][Explore.VisitSummary.level_stdev] / \
+                                   self._visit_summary[level][Explore.VisitSummary.level_mean]
         if level in self._visit_summary:
             self._trace.log().info(self.LVL_FMT.format(
                 level,
@@ -80,7 +82,8 @@ class ExploreNav(StateNav):
                 self._visit_summary[level][Explore.VisitSummary.level_min.value],
                 self._visit_summary[level][Explore.VisitSummary.level_max.value],
                 self._visit_summary[level][Explore.VisitSummary.level_mean.value],
-                self._visit_summary[level][Explore.VisitSummary.level_stdev.value]))
+                self._visit_summary[level][Explore.VisitSummary.level_stdev.value],
+                coefficient_of_variation))
         else:
             self._trace.log().info("Level [{}] is not in the visit summary".format(level))
         return
