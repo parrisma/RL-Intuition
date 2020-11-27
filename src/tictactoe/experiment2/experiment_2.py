@@ -26,7 +26,8 @@ class Experiment2(ExperimentBase):
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
         ActionNavCmd(QNav(ttt=self._ttt,
                           ttt_event_stream=self._ttt_event_stream,
-                          trace=self._trace)).cmdloop()
+                          trace=self._trace,
+                          dir_to_use="..\data")).cmdloop()
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 

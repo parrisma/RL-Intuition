@@ -78,19 +78,19 @@ class TicTacToe(Environment):
 
         self.__board = None
         self.__last_board = None
-        self.__agent = None
-        self.__last_agent = None
 
         self.__x_agent = x
         self.__o_agent = o
         self.__next_agent = {x.name(): o, o.name(): x}
-        self.__x_agent.session_init(self.actions())
-        self.__o_agent.session_init(self.actions())
         self.__agents = dict()
         self.__agents[self.__o_agent.id()] = self.__o_agent
         self.__agents[self.__x_agent.id()] = self.__x_agent
-
         self._x_to_start = x_to_start
+        self.__agent = self._reset_agent()
+        self.__last_agent = None
+
+        self.__x_agent.session_init(self.actions())
+        self.__o_agent.session_init(self.actions())
 
         self.__session_start()
         return
@@ -102,6 +102,20 @@ class TicTacToe(Environment):
         self.__episode_end()
         self.__session_end()
         return
+
+    def _reset_agent(self) -> Agent:
+        """
+        Set the initial agent
+        :return: The selected Agent to take the next move
+        """
+        if self._x_to_start is None:
+            agent = [self.__x_agent, self.__o_agent][randint(0, 1)]
+        else:
+            if self._x_to_start:
+                agent = self.__x_agent
+            else:
+                agent = self.__o_agent
+        return agent
 
     def episode_start(self) -> Tuple[State, Agent, str]:
         """
@@ -119,18 +133,12 @@ class TicTacToe(Environment):
         self.__episode_step = 0
         self.__board = TicTacToe.__empty_board()
         self.__last_board = None
-        self.__agent = TicTacToe.__no_agent
+        self.__agent = self._reset_agent()
         self.__last_agent = TicTacToe.__no_agent
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
         self.__x_agent.episode_init(state)
         self.__o_agent.episode_init(state)
-        if self._x_to_start is None:
-            agent = [self.__x_agent, self.__o_agent][randint(0, 1)]
-        else:
-            if self._x_to_start:
-                agent = self.__x_agent
-            else:
-                agent = self.__o_agent
+        agent = self._reset_agent()
         return state, agent, self.__episode_uuid
 
     def __episode_end(self) -> None:
@@ -190,7 +198,7 @@ class TicTacToe(Environment):
     def __empty_board(cls):
         """
         Return an empty board
-        :return: an empty bpard as numpy array
+        :return: an empty board as numpy array
         """
         return np.full((3, 3), np.nan)
 
@@ -240,7 +248,6 @@ class TicTacToe(Environment):
         :param state: The state before the action
         :param next_state: The state after the action
         :param agent: The agent that played the action
-        :param other_agent: The agent the action was played against
         """
         # ToDo re write using __episode_state directly
         episode_end = False
@@ -367,7 +374,7 @@ class TicTacToe(Environment):
                              agent=agent)
         return other_agent  # play moves to next agent
 
-    def attributes(self):
+    def attributes(self) -> Dict:
         """
         The attributes of the current game state
         :return: Dictionary of attributes and their current values.
@@ -613,6 +620,63 @@ class TicTacToe(Environment):
         :return: The name of the O Agent as string
         """
         return self.__o_agent.name()
+
+    def get_x_agent(self) -> Agent:
+        """
+        Get the X agent
+        :return: The X Agent
+        """
+        return self.__x_agent
+
+    def get_o_agent(self) -> Agent:
+        """
+        Get the O agent
+        :return: The O Agent
+        """
+        return self.__o_agent
+
+    def get_current_agent(self) -> Agent:
+        """
+        Return the agent that is to up to take the next move
+        :return: The Agent to take the next move
+        """
+        return self.__agent
+
+    def get_next_agent(self) -> Agent:
+        """
+        Return the agent that is next  up to take a move (after current agent)
+        :return: The Agent to take the move after the current agent
+        """
+        if self.__agent == self.__x_agent:
+            return self.__o_agent
+        return self.__x_agent
+
+    def set_current_agent(self,
+                          agent) -> None:
+        """
+        Override the next agent to play with the given Agent.
+        :param agent: Can be an Agent object, Agent name or Agent Id. If name or id given it must be the id or name of
+        an agent mapped as X or O agent.
+        """
+        if isinstance(agent, Agent):
+            self.__agent = agent
+        elif type(agent) == str:
+            if agent == self.__x_agent.name():
+                self.__agent = self.__x_agent
+            elif agent == self.__o_agent.name():
+                self.__agent = self.__o_agent
+            else:
+                self.__trace.log().error("Cannot set agent, [{}] is not valid agent name".format(agent))
+        elif type(agent) == int:
+            if agent == self.__x_agent.id():
+                self.__agent = self.__x_agent
+            elif agent == self.__o_agent.id():
+                self.__agent = self.__o_agent
+            else:
+                self.__trace.log().error("Cannot set agent, [{}] is not valid agent name".format(str(agent)))
+        else:
+            self.__trace.log().error("Cannot set agent given [{}]".format(str(agent)))
+        return
 
     def legal_board_state(self) -> bool:
         """

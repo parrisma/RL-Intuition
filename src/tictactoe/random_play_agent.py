@@ -4,6 +4,7 @@ from src.lib.rltrace.trace import Trace
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.agent_factory import AgentFactory
 from src.reflrn.interface.state import State
+from src.tictactoe.explore.explore import Explore
 
 
 class RandomPlayAgent(Agent):
@@ -19,6 +20,8 @@ class RandomPlayAgent(Agent):
     _trace: Trace
     _id: int
     _name: str
+    _explore: Explore
+    _prev_state: State
 
     def __init__(self,
                  agent_id: int,
@@ -27,6 +30,8 @@ class RandomPlayAgent(Agent):
         self._trace = self._env.get_trace()
         self._id = agent_id
         self._name = agent_name
+        self._explore = None
+        self._prev_state = None
         self._trace.log().debug("Agent created => {}:{}".format(self._id, self._name))
         return
 
@@ -58,6 +63,7 @@ class RandomPlayAgent(Agent):
         Callback for agent to process notification of a new episode
         :param state: The opening state of the episode
         """
+        self._prev_state = None
         self._trace.log().debug("Agent notified of episode start => {}:{}".format(self._id, self._name))
         return
 
@@ -72,7 +78,7 @@ class RandomPlayAgent(Agent):
     def choose_action(self, state: State, possible_actions: [int]) -> int:
         """
         Request for Agent to select an action.
-        :param state: The current state of teh environment
+        :param state: The current state of the environment
         :param possible_actions: The possible actions left to play
         :return: The action to play as an int
         """
@@ -92,6 +98,20 @@ class RandomPlayAgent(Agent):
         :param reward_for_play: The reward given to teh agent for playing action in state
         :param episode_complete: True if the next_state represents a terminal state
         """
+        #
+        # If attached to an exploration record this event to visit and network (graph) so that it
+        # can be saved for later investigation: Will create visit & graph YAML files.
+        #
+        if self._explore is not None:
+            if self._prev_state is None:
+                self._prev_state = state
+
+            step = np.nansum(np.abs(state.state_model_input()))
+            self._explore.record(prev_state=self._prev_state.state_as_string(),
+                                 curr_state=state.state_as_string(),
+                                 curr_state_is_episode_end=episode_complete,
+                                 step=step)
+            self._prev_state = state
         return
 
     def session_init(self,
@@ -123,3 +143,12 @@ class RandomPlayAgent(Agent):
         :return: TBC
         """
         raise NotImplementedError()
+
+    def attach_to_explore(self,
+                          explore: Explore) -> None:
+        """
+        Attach the agent to an exploration such that it's activity can be tracked
+        :param explore: The Exploration to attach to
+        """
+        self._explore = explore
+        return

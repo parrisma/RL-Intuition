@@ -48,6 +48,8 @@ class Explore:
         self.trace = trace
         self.ttt_event_stream = ttt_event_stream
         self.ttt = ttt
+        self.visited = None
+        self.graph = None
         self._reset()
         return
 
@@ -111,7 +113,7 @@ class Explore:
         try:
             with open(filename, "w") as file:
                 yaml.dump(visit_as_dict, file)
-            self.trace.log().debug("Saved visits as YAML [{}]".format(filename))
+            self.trace.log().info("Saved visits as YAML [{}]".format(filename))
         except Exception as e:
             self.trace.log().error("Failed to save states to file [{}] with error [{}]"
                                    .format(filename, str(e)))
@@ -124,7 +126,7 @@ class Explore:
         """
         try:
             nx.write_yaml(self.graph, filename)
-            self.trace.log().debug("Saved networkx graph as YAML [{}]".format(filename))
+            self.trace.log().info("Saved networkx graph as YAML [{}]".format(filename))
         except Exception as e:
             self.trace.log().error("Failed to save networkx graph to file [{}] with error [{}]"
                                    .format(filename, str(e)))

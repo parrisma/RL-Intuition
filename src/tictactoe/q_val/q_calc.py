@@ -102,7 +102,8 @@ class QCalc:
         q_next_state = self._get_state_q_values(next_state)
         q_update = self.learning_rate * (reward + (self.gamma * (np.max(q_next_state) - q_state[action])))
         q_state[action] = q_state[action] + q_update
-        q_state = QCalc.normalize(q_state)
+        #q_state = QCalc.normalize(q_state)
+        self._trace.log().info("{} -> {} @ {} - {:7.3f}".format(state, next_state, reward, q_state[action]))
         self._set_state_q_values(state, q_state)
         return
 

@@ -2,6 +2,7 @@ from src.lib.rltrace.trace import Trace
 from src.tictactoe.interface.gamenav import GameNav
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.explore.explore import Explore
 
 
 class TTTGameNav(GameNav):
@@ -13,6 +14,7 @@ class TTTGameNav(GameNav):
     _ttt_event_stream: TicTacToeEventStream
     _ttt: TicTacToe
     _session_uuid: str
+    _exploration: Explore
 
     RUN_FMT = "command is <run num_episodes>"
     DONE_FMT = "Done running episodes, [{}] events saved to elastic db with session_uuid {}"
@@ -30,6 +32,9 @@ class TTTGameNav(GameNav):
         self._ttt_event_stream = ttt_event_stream
         self._ttt = ttt
         self._session_uuid = session_uuid
+        self._exploration = Explore(ttt=ttt, trace=trace, ttt_event_stream=ttt_event_stream)
+        self._ttt.get_o_agent().attach_to_explore(self._exploration)  # ToDo make attach part of agent interface
+        self._ttt.get_x_agent().attach_to_explore(self._exploration)
         return
 
     @staticmethod
@@ -55,6 +60,7 @@ class TTTGameNav(GameNav):
                 num_episodes = int(parsed_args[0])
                 self._trace.log().info("Running {} TTT episodes".format(num_episodes))
                 self._ttt.run(num_episodes=num_episodes)
+                self._exploration.save(session_uuid=self._session_uuid, dir_to_use=self._dir_to_use)
                 cnt = self._ttt_event_stream.count_session(session_uuid=self._session_uuid)
                 self._trace.log().info(self.DONE_FMT.format(cnt, self._session_uuid))
             except Exception as _:
