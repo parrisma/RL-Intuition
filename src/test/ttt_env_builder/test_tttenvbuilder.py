@@ -47,12 +47,11 @@ class TestTTTEnvBuilder(unittest.TestCase):
         self._transformer = None
         return
 
-    def test_1(self):
+    def test_auto_create_index_if_missing(self):
         """
         Test ttt_event index is created when TTT Env is bootstrapped.
         :return:
         """
-        self._trace.log().info("Test 1")
         ttteb = ExperimentEnvBuilder(TestTTTEnvBuilder._env.get_context())
         ttteb.execute(purge=False)
         self.assertEqual(True,

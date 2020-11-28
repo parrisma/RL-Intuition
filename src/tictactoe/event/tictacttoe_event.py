@@ -10,6 +10,7 @@ class TicTacToeEvent:
     episode_step: int
     state: TicTacToeState
     action: str
+    agent: str
     reward: float
     episode_end: bool
     episode_outcome: str
@@ -24,6 +25,7 @@ class TicTacToeEvent:
                  episode_step: int,
                  state: TicTacToeState,
                  action: str,
+                 agent: str,
                  reward: float,
                  episode_end: bool,
                  episode_outcome):
@@ -31,6 +33,7 @@ class TicTacToeEvent:
         self.episode_step = episode_step
         self.state = state
         self.action = action
+        self.agent = agent
         self.reward = reward
         self.episode_end = episode_end
         self.episode_outcome = episode_outcome
@@ -43,6 +46,7 @@ class TicTacToeEvent:
                 self.episode_end == other.episode_end and
                 self.state == other.state and
                 self.action == other.action and
+                self.agent == other.agent and
                 self.reward == other.reward and
                 self.episode_end == other.episode_end and
                 self.episode_outcome == other.episode_outcome
@@ -52,11 +56,12 @@ class TicTacToeEvent:
         return hash(self)
 
     def __str__(self):
-        return "Episode:{} Step:{} Action:{} Reward:{:+.3f} State{}".format(self.episode_uuid,
-                                                                            self.episode_step,
-                                                                            self.action,
-                                                                            self.reward,
-                                                                            self.state)
+        return "Episode:{} Step:{} Action:{} Agent {} Reward:{:+.3f} State{}".format(self.episode_uuid,
+                                                                                     self.episode_step,
+                                                                                     self.action,
+                                                                                     self.agent,
+                                                                                     self.reward,
+                                                                                     self.state)
 
     def __repr__(self):
         return self.__str__()

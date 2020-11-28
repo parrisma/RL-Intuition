@@ -49,10 +49,12 @@ class ExperimentBase(Experiment):
         self._agent_x = self._agent_factory.new_x_agent()
         self._state_factory = TicTacToeStateFactory(x_agent=self._agent_x,
                                                     o_agent=self._agent_o)
-        self._ttt_event_stream = TicTacToeEventStream(es=self._es,
+        self._ttt_event_stream = TicTacToeEventStream(trace=self._trace,
+                                                      es=self._es,
                                                       es_index=self._settings.ttt_event_index_name,
                                                       state_factory=self._state_factory,
-                                                      session_uuid=self._session_uuid)
+                                                      session_uuid=self._session_uuid,
+                                                      dir_to_use=self._settings.ttt_event_dir_to_use)
         self._ttt = TicTacToe(env=self._env,
                               ttt_event_stream=self._ttt_event_stream,
                               x=self._agent_x,

@@ -14,6 +14,7 @@ from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.test.state.dummy_state import DummyState
 from src.test.ttt_event_stream.DummyStateFactory import DummyStateFactory
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
+from src.lib.gibberish.gibberish import Gibberish
 
 
 class TestTTTEventStream(unittest.TestCase):
@@ -69,7 +70,7 @@ class TestTTTEventStream(unittest.TestCase):
         self._session_uuids_to_delete = list()
         return
 
-    def test_1(self):
+    def test_write_of_a_single_ttt_event(self):
         """
         Test write of single dummy TTT event
         :return:
@@ -82,6 +83,7 @@ class TestTTTEventStream(unittest.TestCase):
                            episode_step=1,
                            state=DummyState(),
                            action="1",
+                           agent=Gibberish.word_gibber(),
                            reward=3.142,
                            episode_end=True,
                            episode_outcome=TicTacToeEvent.STEP)
@@ -96,7 +98,7 @@ class TestTTTEventStream(unittest.TestCase):
         self.assertEqual(1, cnt)
         return
 
-    def test_2(self):
+    def test_write_of_multi_ttt_event_and_verify_records_written(self):
         """
         Test an episode can be created and written back as event objects
         """
@@ -122,6 +124,7 @@ class TestTTTEventStream(unittest.TestCase):
                                    episode_step=i,
                                    state=DummyState(),
                                    action=str(np.random.randint(100)),
+                                   agent=Gibberish.word_gibber(),
                                    reward=np.random.random(),
                                    episode_end=eend,
                                    episode_outcome=outc)
@@ -129,6 +132,7 @@ class TestTTTEventStream(unittest.TestCase):
                                episode_step=ttt_e.episode_step,
                                state=ttt_e.state,
                                action=ttt_e.action,
+                               agent=ttt_e.agent,
                                reward=ttt_e.reward,
                                episode_end=ttt_e.episode_end,
                                episode_outcome=ttt_e.episode_outcome)
@@ -173,6 +177,7 @@ class TestTTTEventStream(unittest.TestCase):
                                    episode_step=j,
                                    state=DummyState(),
                                    action=str(np.random.randint(10)),
+                                   agent=Gibberish.word_gibber(),
                                    reward=np.random.random(),
                                    episode_end=False,
                                    episode_outcome=TicTacToeEvent.STEP)

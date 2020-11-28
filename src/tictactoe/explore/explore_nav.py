@@ -33,7 +33,7 @@ class ExploreNav(StateNav):
                  ttt_event_stream: TicTacToeEventStream,
                  trace: Trace,
                  session_uuid: str,
-                 dir_to_use: str = '.'):
+                 dir_to_use: str = None):
         self._dir_to_use = dir_to_use
         self._trace = trace
         self._ttt_event_stream = ttt_event_stream
