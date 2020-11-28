@@ -3,8 +3,8 @@
 # Date: Date of the version
 #
 header:
-  version: "1.0"
-  date: "25 Oct 2020"
+  version: "1.1"
+  date: "28 Nov 2020"
   description: "TicTacToe Env Specific Settings"
 ttt_event:
   index_name: "ttt_event"
