@@ -9,4 +9,4 @@ header:
 ttt_event:
   index_name: "ttt_event"
   index_json: "https://raw.githubusercontent.com/parrisma/RL-Intuition/<current-git-branch>/src/tictactoe/event/ttt_event.json"
-  dir_to_use: "..\data"
+  dir_to_use: "..\\data"
