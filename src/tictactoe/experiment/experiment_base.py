@@ -55,7 +55,7 @@ class ExperimentBase(Experiment):
                                                       state_factory=self._state_factory,
                                                       session_uuid=self._session_uuid,
                                                       dir_to_use=self._settings.ttt_event_dir_to_use)
-        self._ttt = TicTacToe(env=self._env,
+        self._ttt = TicTacToe(trace=self._trace,
                               ttt_event_stream=self._ttt_event_stream,
                               x=self._agent_x,
                               o=self._agent_o)

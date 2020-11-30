@@ -69,6 +69,11 @@ class ActionNavCmd(cmd.Cmd):
         self.prompt = ActionNav.Action.action_9.do(self._nav)
         return
 
+    def do_hist(self, arg):
+        """Show history of Q Values for action in current state"""
+        self.prompt = ActionNav.Action.hist.do(self._nav, args=arg)
+        return
+
     def do_back(self, arg):
         """Navigate to back to previous state"""
         self.prompt = ActionNav.Action.back.do(self._nav)

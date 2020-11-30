@@ -107,7 +107,10 @@ class RandomPlayAgent(Agent):
                 self._prev_state = state
 
             step = np.nansum(np.abs(state.state_model_input()))
-            self._explore.record(prev_state=self._prev_state.state_as_string(),
+            prev_state = self._explore.other(self).get_prev_state()
+            if prev_state is not None:
+                prev_state = prev_state.state_as_string()
+            self._explore.record(prev_state=prev_state,
                                  curr_state=state.state_as_string(),
                                  curr_state_is_episode_end=episode_complete,
                                  step=step)
@@ -152,3 +155,10 @@ class RandomPlayAgent(Agent):
         """
         self._explore = explore
         return
+
+    def get_prev_state(self) -> State:
+        """
+        Get the previous state seen by this agent
+        :return: The previous state that was seen
+        """
+        return self._prev_state

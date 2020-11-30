@@ -1,9 +1,6 @@
 from random import randint
 from typing import Tuple, Dict, List
-
 import numpy as np
-
-from src.lib.envboot.env import Env
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
 from src.reflrn.interface.agent import Agent
@@ -18,7 +15,6 @@ from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
 
 class TicTacToe(Environment):
     # There are 8534 legal board states
-    __env: Env
     __trace: Trace
     __ttt_event_stream: TicTacToeEventStream
     __session_uuid: str
@@ -57,7 +53,7 @@ class TicTacToe(Environment):
     # to an initial up-played set-up
     #
     def __init__(self,
-                 env: Env,
+                 trace: Trace,
                  ttt_event_stream: TicTacToeEventStream,
                  x: Agent,
                  o: Agent,
@@ -72,9 +68,8 @@ class TicTacToe(Environment):
         self.__episode_uuid = None
         self.__episode_step = None
 
-        self.__env = env
         self.__ttt_event_stream = ttt_event_stream
-        self.__trace = self.__env.get_trace()
+        self.__trace = trace
 
         self.__board = None
         self.__last_board = None
@@ -166,7 +161,7 @@ class TicTacToe(Environment):
         Start a new session
         """
         self.__session_end()
-        self.__session_uuid = self.__ttt_event_stream.session_uuid  # inherit same session uuid as event stream
+        self.__session_uuid = self.__ttt_event_stream.session_uuid  # noqa inherit same session uuid as event stream
         self.__trace.log().debug("Start Session [{}]".format(self.__session_uuid))
         return
 
@@ -271,23 +266,30 @@ class TicTacToe(Environment):
                                              episode_step=self.__episode_step,
                                              state=state,
                                              action="{}".format(action),
+                                             agent=agent.name(),
                                              reward=reward,
                                              episode_end=False,
                                              episode_outcome=TicTacToeEvent.STEP)
         if episode_end:
             self.__ttt_event_stream.record_event(episode_uuid=self.__episode_uuid,
-                                                 episode_step=self.__episode_step,
+                                                 episode_step=self.__episode_step + 1,
                                                  state=next_state,
                                                  action="-1",
+                                                 agent=agent.name(),
                                                  reward=0,
                                                  episode_end=episode_end,
                                                  episode_outcome=episode_outcome)
         return
 
-    def __id_to_agent(self,
-                      agent_id) -> Agent:
+    def id_to_agent(self,
+                    agent_id,
+                    other: bool = False) -> Agent:
         """
-        Take the given id an return the matching agent
+        Take the given id and return the matching agent.
+        Where the agent_id can be
+        The string name of an agent associated with this TTT instance
+        The numeric id of an agent associated with this TTT instance
+        An instance of an Agent
         :param agent_id: The numerical Id or name of the agent
         :return: The matching Agent or none if no match
         """
@@ -297,11 +299,30 @@ class TicTacToe(Environment):
                 agent = self.__x_agent
             elif self.__o_agent.id() == agent_id:
                 agent = self.__o_agent
+            else:
+                raise RuntimeError("[{}] is not a valid numeric Id of an Agent".format(agent_id))
         elif type(agent_id) == str:
             if self.__x_agent.name() == agent_id:
                 agent = self.__x_agent
             elif self.__o_agent.name() == agent_id:
                 agent = self.__o_agent
+            else:
+                raise RuntimeError("[{}] is not a valid name of an Agent".format(agent_id))
+        elif isinstance(agent_id, Agent):
+            if self.__x_agent == agent_id:
+                agent = agent_id
+            elif self.__o_agent == agent_id:
+                agent = agent_id
+            else:
+                raise RuntimeError("[{}] is not an Agent associated with this instance of TTT".format(str(agent_id)))
+        else:
+            raise RuntimeError("[{}] of Type [{}] Cannot be converted to an Agent".
+                               format(str(agent_id), type(agent_id)))
+        if other:
+            if agent == self.__x_agent:
+                agent = self.__o_agent
+            else:
+                agent = self.__x_agent
         return agent
 
     def do_action(self,
@@ -318,7 +339,7 @@ class TicTacToe(Environment):
         :return: The name of the next agent to play or None if the Agent/Action combo was illegal
         """
         next_agent = None
-        agent = self.__id_to_agent(agent_id)
+        agent = self.id_to_agent(agent_id)
         if agent is None:
             self.__trace.log().debug("do_action ignored unknown agent [{}]".
                                      format(agent_id))
@@ -326,7 +347,7 @@ class TicTacToe(Environment):
             self.__trace.log().debug("do_action ignored for action [{}] as state [{}] is illegal".
                                      format(action,
                                             self.state().state_as_string()))
-        elif action not in self.__actions_ids_left_to_take():
+        elif action not in self.actions_ids_left_to_take():
             self.__trace.log().debug("do_action ignored illegal action [{}] in state [{}]".
                                      format(action,
                                             self.state().state_as_string()))
@@ -362,8 +383,8 @@ class TicTacToe(Environment):
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
 
         # Make the play on the board.
-        action = agent.choose_action(state, self.__actions_ids_left_to_take())
-        if action not in self.__actions_ids_left_to_take():
+        action = agent.choose_action(state, self.actions_ids_left_to_take())
+        if action not in self.actions_ids_left_to_take():
             raise TicTacToe.IllegalActorAction("Actor Proposed Illegal action in current state :" + str(action))
         self.__take_action(action, agent)
         next_state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
@@ -453,8 +474,8 @@ class TicTacToe(Environment):
             board = self.__board
         return board[np.isnan(board)].size > 0
 
-    def __actions_ids_left_to_take(self,
-                                   board: np.ndarray = None) -> np.array:
+    def actions_ids_left_to_take(self,
+                                 board: np.ndarray = None) -> np.array:
         """
         The possible game actions remaining given the board state
         :param board: If given the actions for the given board else return actions for internal board state

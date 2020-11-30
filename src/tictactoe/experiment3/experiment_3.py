@@ -1,5 +1,5 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
-from src.tictactoe.dummy_agent import DummyAgent
+from src.tictactoe.simulation_agent import SimulationAgent
 
 
 class Experiment3(ExperimentBase):
@@ -8,7 +8,7 @@ class Experiment3(ExperimentBase):
     """
 
     def __init__(self):
-        super().__init__(DummyAgent.DummyAgentFactory())
+        super().__init__(SimulationAgent.SimulationAgentFactory())
         return
 
     def run(self) -> None:

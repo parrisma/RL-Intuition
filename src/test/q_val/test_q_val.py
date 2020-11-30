@@ -1,6 +1,7 @@
 import numpy as np
 import unittest
 from src.lib.rltrace.trace import Trace
+from src.tictactoe.q_val.q_vals import QVals
 from src.tictactoe.q_val.q_calc import QCalc
 
 

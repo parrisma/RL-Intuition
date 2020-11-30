@@ -93,7 +93,6 @@ class TicTacToeEventStream:
             raise RuntimeError("[{}] passed to {} does not exist".format(dir_to_verify, self.__class__.__name__))
         return dir_to_verify
 
-    @property
     def session_uuid(self) -> str:
         """
         Get the session uuid of the event stream
@@ -175,7 +174,7 @@ class TicTacToeEventStream:
                 "Get session failed with exception [{}]".format(str(e)))
 
         # Always return sorted in uuid & step order.
-        res = sorted(res, key=lambda x: "{}{}".format(x.episode_uuid, x.episode_step))
+        res = sorted(res, key=lambda x: (x.episode_uuid, int(x.episode_step)))
         return res
 
     def list_of_available_sessions(self) -> List[List]:
@@ -266,7 +265,6 @@ class TicTacToeEventStream:
                                            self._default_if_none(session_uuid, self._session_uuid))
         res = None
         try:
-            filename = self.VISITS_FILE.format(dir_to_use, session_uuid)
             self._trace.log().info("Loading visits from file [{}]".format(filename))
             with open(filename, 'r') as stream:
                 res = dict()

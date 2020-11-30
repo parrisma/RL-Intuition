@@ -20,11 +20,16 @@ class QNav(ActionNav):
     _trace: Trace
     _ttt_event_stream: TicTacToeEventStream
     _dir_to_use: str
+    _q_calc: QCalc
     _exploration: Explore
 
-    _fmt = "[{}][{}][{}]  [{}][{}][{}]"
-    _sep = "_______________________________________________________________________________________"
-    _title = "       X-Visits               O-Visits"
+    _Q_HIST_FMT = "{} : {} : Ns Max [{:12.6f}] Old [{:12.6f}] Update [{:12.6f}] New [{:12.6f}]"
+    _FMT = "[{}][{}][{}]  [{}][{}][{}]"
+    _SEP = "_______________________________________________________________________________________"
+    _TITLE = "       X-Visits               O-Visits"
+    _X = 'X'
+    _O = 'O'
+    _B = '-'
 
     def __init__(self,
                  ttt: TicTacToe,
@@ -38,7 +43,8 @@ class QNav(ActionNav):
         self._q_vals = dict()
         self._reset()
         self._show(state=self._ttt.state().state_as_string())
-        self._exploration = Explore(ttt=ttt, trace=trace, ttt_event_stream=ttt_event_stream)
+        self._exploration = None # noqa
+        self._q_calc = None # noqa
         return
 
     def _ready(self) -> bool:
@@ -54,6 +60,7 @@ class QNav(ActionNav):
         Return the valid action associated with the highest reward
         :return: The action to maximise reward
         """
+        greedy_actn = None
         if self._ttt.episode_complete():
             greedy_actn = -1
         else:
@@ -61,7 +68,8 @@ class QNav(ActionNav):
             valid_actions = self._ttt.actions(self._ttt.state())
             if len(valid_actions) > 0:
                 for actn in valid_actions:
-                    res.append([actn, q_vals[actn]])
+                    if not np.isnan(q_vals[actn]):
+                        res.append([actn, q_vals[actn]])
                 res = sorted(res, key=lambda x: x[1])
                 greedy_actn = res[-1][0]
         return greedy_actn
@@ -72,7 +80,7 @@ class QNav(ActionNav):
         This view presents the number of passes that have been seen for the actions that transition to the states
         possible from this state
         """
-        if self._exploration.visited is None:
+        if self._exploration._visited is None:
             return
 
         if not self._ttt.episode_complete():
@@ -86,8 +94,9 @@ class QNav(ActionNav):
                     for agnt, visit in [[self._ttt.get_o_agent().id(), o_vis],
                                         [self._ttt.get_x_agent().id(), x_vis]]:
                         self._ttt.do_action(action=actn, agent_id=agnt)
-                        if self._ttt.state().state_as_string() in self._exploration.visited:
-                            visit[actn] = "{:5d}".format(self._exploration.visited[self._ttt.state().state_as_string()])
+                        if self._ttt.state().state_as_string() in self._exploration._visited:
+                            visit[actn] = "{:5d}".format(
+                                self._exploration._visited[self._ttt.state().state_as_string()])
                         else:
                             if self._ttt.legal_board_state():
                                 visit[actn] = "  -  "
@@ -98,12 +107,12 @@ class QNav(ActionNav):
             self._ttt.import_state(prev_state)
             self._ttt.set_current_agent(agent=prev_agnt)
             s = "\n\n{}\n{}\n{}\n{}\n{}\n{}\n". \
-                format(self._sep,
-                       self._title,
-                       self._fmt.format(x_vis[0], x_vis[1], x_vis[2], o_vis[0], o_vis[1], o_vis[2]),
-                       self._fmt.format(x_vis[3], x_vis[4], x_vis[5], o_vis[3], o_vis[4], o_vis[5]),
-                       self._fmt.format(x_vis[6], x_vis[7], x_vis[8], o_vis[6], o_vis[7], o_vis[8]),
-                       self._sep)
+                format(self._SEP,
+                       self._TITLE,
+                       self._FMT.format(x_vis[0], x_vis[1], x_vis[2], o_vis[0], o_vis[1], o_vis[2]),
+                       self._FMT.format(x_vis[3], x_vis[4], x_vis[5], o_vis[3], o_vis[4], o_vis[5]),
+                       self._FMT.format(x_vis[6], x_vis[7], x_vis[8], o_vis[6], o_vis[7], o_vis[8]),
+                       self._SEP)
             self._trace.log().info(s)
         else:
             self._trace.log().info("No visit analysis for a complete episode")
@@ -149,6 +158,36 @@ class QNav(ActionNav):
         else:
             p = "(Use [list] or [load] to start or [help list] / [help load]"
         return p
+
+    def do_hist(self,
+                arg) -> str:
+        """
+        Show the history of Q VAlue updates for the action in the current state
+        :param arg: The action to show Q Value history for
+        :return: The Nav prompt as string
+        """
+        args = self.parse(arg)
+        if len(args) == 1:
+            action = int(args[0])
+            if self._ready():
+                if not self._ttt.episode_complete():
+                    hst = self._q_calc.get_q_hist(state=self._ttt.state().state_as_string(),
+                                                  action=action)
+                    xs = str(self._ttt.get_x_agent().id())
+                    os = str(self._ttt.get_o_agent().id())
+                    if hst is not None:
+                        i = 1
+                        for entry in hst:
+                            st = entry[0].replace(xs, self._X).replace(os, self._O).replace("0", self._B)
+                            self._trace.log().info(
+                                self._Q_HIST_FMT.format(i, st, entry[1], entry[2], entry[3], entry[4]))
+                            i += 1
+                    else:
+                        self._trace.log().info("No Q Val history for {} - {}".
+                                               format(self._ttt.state().state_as_string(), action))
+        else:
+            self._trace.log().info("Hist command requires the action as in hist <action 0 or 1 or .. 8>")
+        return self._prompt()
 
     def do_action(self,
                   action: int) -> str:
@@ -236,15 +275,19 @@ class QNav(ActionNav):
             self._trace.log().info("Load command requires at least a session UUID with an optional reprocess count")
             uuid = None
         if uuid is not None:
-            self._q_vals = QCalc(trace=self._trace,
-                                 ttt_event_stream=self._ttt_event_stream).calc_q(session_uuid=uuid,
-                                                                                 reprocess_count=reprocess_count)
+            self._trace.log().info("Initiating Q-Val Cals")
+            self._q_calc = QCalc(trace=self._trace,
+                                 ttt_event_stream=self._ttt_event_stream,
+                                 session_uuid=uuid)
+            self._q_vals = self._q_calc.calc_q(reprocess_count=reprocess_count)
+            self._exploration = Explore(ttt=self._ttt,
+                                        trace=self._trace,
+                                        ttt_event_stream=self._ttt_event_stream,
+                                        visited=self._q_calc.get_visits(),
+                                        graph=self._q_calc.get_graph())
             self._ttt.episode_start()
             self._last = self._last_reset()
-            self._trace.log().info("Loading exploration stats")
-            self._exploration.visited = self._exploration.load_visits_from_yaml(session_uuid=uuid,
-                                                                                dir_to_use=self._dir_to_use)
-            self._trace.log().info("Done loading exploration stats")
+            self._trace.log().info("Done Q-Val Cals")
             self.do_home()
         return self._prompt()
 

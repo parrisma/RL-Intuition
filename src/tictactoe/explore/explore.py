@@ -1,9 +1,10 @@
 from enum import IntEnum, unique
-from typing import List
+from typing import List, Union
 import networkx as nx
 import numpy as np
 from typing import Dict
 from src.lib.rltrace.trace import Trace
+from src.reflrn.interface.agent import Agent
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
@@ -13,10 +14,10 @@ class Explore:
     """
     This class explores all possible game states and records them as TTT Events.
     """
-    _visited: Dict
     _trace: Trace
     _ttt_event_stream: TicTacToeEventStream
     _ttt: TicTacToe
+    _visited: Dict[str, int]
     _graph: nx.DiGraph
 
     EDGE_ATTR_WON = 'won'
@@ -38,12 +39,14 @@ class Explore:
     def __init__(self,
                  ttt: TicTacToe,
                  trace: Trace,
-                 ttt_event_stream: TicTacToeEventStream):
+                 ttt_event_stream: TicTacToeEventStream,
+                 visited: Dict[str, int] = None,
+                 graph: nx.DiGraph = None):
         self._trace = trace
         self._ttt_event_stream = ttt_event_stream
         self._ttt = ttt
-        self._visited = None
-        self._graph = None
+        self._visited = visited
+        self._graph = graph
         self._reset()
         return
 
@@ -69,22 +72,42 @@ class Explore:
         """
         Reset the internal state
         """
-        self._visited = dict()
-        self._graph = nx.DiGraph()
+        if self._visited is None:
+            self._visited = dict()
+        if self._graph is None:
+            self._graph = nx.DiGraph()
         self._ttt.episode_start()
         return
 
-    def _other(self,
-               agent_name: str) -> str:
+    def other(self,
+              agent: str) -> Union[int, str, Agent]:
         """
-        Return the name of the 'other' agent given on of the agents X or O
-        :param agent_name: The name to give the other agent for
-        :return: The other agent
+        Return the name, id or Agent object of the 'other' agent given on of the agents X or O
+        :param agent: The name, id or Agent object to give the other agent for
+        :return: The other agent name, id or object; where return type matches type of request id, name, agent
         """
-        if agent_name == self._ttt.x_agent_name():
-            return self._ttt.o_agent_name()
+        if agent is not None:
+            if isinstance(agent, str):
+                if agent == self._ttt.get_x_agent().name():
+                    res = self._ttt.get_o_agent().name()
+                else:
+                    res = self._ttt.get_x_agent().name()
+            elif isinstance(agent, int):
+                if agent == self._ttt.get_x_agent().id():
+                    res = self._ttt.get_o_agent().id()
+                else:
+                    res = self._ttt.get_x_agent().id()
+            elif isinstance(agent, Agent):
+                if agent.id() == self._ttt.get_x_agent().id():
+                    res = self._ttt.get_o_agent()
+                else:
+                    res = self._ttt.get_x_agent()
+            else:
+                raise RuntimeError("Must be Agent name (str), Id (int) or Object (Agent) - {} was passed".
+                                   format(type(agent)))
         else:
-            return self._ttt.x_agent_name()
+            raise RuntimeError("agent my not be None")
+        return res
 
     def save(self,
              session_uuid: str = None,
@@ -108,7 +131,7 @@ class Explore:
         :param session_uuid: The current session_uuid (to include in the filename)
         :param dir_to_use: The dir to save files in default is "." current working directory
         """
-        return self._ttt_event_stream.load_visits_from_yaml(session_uuid=session_uuid, dir_to_use=dir_to_use)
+        return self._ttt_event_stream.load_graph_from_yaml(session_uuid=session_uuid, dir_to_use=dir_to_use)
 
     def load_visits_from_yaml(self,
                               session_uuid: str,
@@ -210,7 +233,7 @@ class Explore:
 
     def record(self,
                prev_state: str,
-               curr_state,
+               curr_state: str,
                step: int,
                curr_state_is_episode_end: bool) -> None:
         """
@@ -225,7 +248,8 @@ class Explore:
                                        step,
                                        len(self._visited)))
         self.record_visit(curr_state, curr_state_is_episode_end)
-        self.record_network(prev_state, curr_state, curr_state_is_episode_end)
+        if prev_state is not None and curr_state != prev_state:
+            self.record_network(prev_state, curr_state, curr_state_is_episode_end)
         return
 
     def explore_random(self,

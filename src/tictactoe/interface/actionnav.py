@@ -24,6 +24,7 @@ class ActionNav(metaclass=abc.ABCMeta):
         cmd_load = "load"
         cmd_switch = "switch"
         cmd_list = "list"
+        cmd_hist = "hist"
 
     @unique
     class Action(IntEnum):
@@ -42,6 +43,7 @@ class ActionNav(metaclass=abc.ABCMeta):
         load = -3
         switch = -4
         list = -5
+        hist = -6
 
         def __init__(self,
                      action: int):
@@ -62,6 +64,8 @@ class ActionNav(metaclass=abc.ABCMeta):
                 return nav.do_switch()
             if self.value == ActionNav.Action.list:
                 return nav.do_list()
+            if self.value == ActionNav.Action.hist:
+                return nav.do_hist(args)
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -70,6 +74,15 @@ class ActionNav(metaclass=abc.ABCMeta):
         """
         Navigate the structure by following the given action
         :param action: The action to navigate by
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_hist(self,
+                action: int) -> None:
+        """
+        Show the Q VAlue history for the given action in the current state
+        :param action: The action to show Q Value history for
         """
         raise NotImplementedError()
 
