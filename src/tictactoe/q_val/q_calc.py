@@ -27,15 +27,15 @@ class QCalc:
     _num_actions: int
     _gamma: float  # How much do we value future rewards
     _learning_rate: float  # Min (initial) size of Q Value update
-    _q_values: Dict[str, QVals]  # State str : Key -> actions q values & #num times reward seen
-    _q_hist: Dict[str, List[Tuple[str, float, float, float, float]]]
+    _q_values: Dict[str, Dict[str, QVals]]  # State str : Key -> actions q values & #num times reward seen
+    _q_hist: Dict[str, Dict[str, List[Tuple[str, int, float, float, float, float, float]]]]
     _events: List[TicTacToeEvent]
     _visits: Dict[str, int]
     _graph: nx.DiGraph
     _session_uuid: str
     _ttt: TicTacToe
     _max_func_idx: int
-    _max_funcs: List[Callable[[str, Dict], np.float]]
+    _max_funcs: List[Callable[[str, str, Dict], np.float]]
 
     NAIVE_MAX = 0
     ONE_STEP_MAX = 1
@@ -59,9 +59,9 @@ class QCalc:
         self._learning_rate = 0.1
         self._q_values = dict()
         self._q_hist = dict()
-        self._events = None
-        self._visits = None
-        self._graph = None
+        self._events = None  # noqa
+        self._visits = None  # noqa
+        self._graph = None  # noqa
         self._load_session(session_uuid=self._session_uuid)
 
         agent_factory = SimulationAgent.SimulationAgentFactory()
@@ -72,32 +72,40 @@ class QCalc:
 
         self._max_funcs = [self._naive_max,  # NAIVE_MAX
                            self._one_step_max]  # ONE_STEP_MAX
-        self._max_func_idx = self.NAIVE_MAX
+        self._max_func_idx = self.ONE_STEP_MAX
 
         return
 
     def _get_state_q_values(self,
+                            agent: str,
                             state: str) -> np.ndarray:
         """
-        Get the Q values of the given state.
+        Get the Q values of the given agent in the given state.
+        :param agent: The Agent to get Q Values for
         :param state: The state to get Q Values for
-        :return: The Q Values for given state as numpy array of float
+        :return: The Q Values for given agent in the given state as numpy array of float
         """
-        if state not in self._q_values:
-            self._q_values[state] = QVals(state=state)
-        return self._q_values[state].q_vals
+        if agent not in self._q_values:
+            self._q_values[agent] = dict()
+        if state not in self._q_values[agent]:
+            self._q_values[agent][state] = QVals(state=state)
+        return self._q_values[agent][state].q_vals
 
     def _set_state_q_values(self,
+                            agent: str,
                             state: str,
                             q_values: np.ndarray) -> None:
         """
-        Set the Q values of the given state.
+        Set the Q values of the given agent in the given state.
+        :param agent: The agent to set q values for
         :param state: The state to set Q Values for
-        :param q_values: The Q Values to set for the given state
+        :param q_values: The Q Values to set for the given agent in the given state
         """
-        if state not in self._q_values:
-            self._q_values[state] = QVals(state=state)
-        self._q_values[state].q_vals = q_values
+        if agent not in self._q_values:
+            self._q_values[agent] = dict()
+        if state not in self._q_values[agent]:
+            self._q_values[agent][state] = QVals(state=state)
+        self._q_values[agent][state].q_vals = q_values
         return
 
     @staticmethod
@@ -127,6 +135,7 @@ class QCalc:
         return ac
 
     def _one_step_max(self,
+                      agent: str,
                       next_state: str,
                       **kwargs) -> np.float:
         """
@@ -137,6 +146,7 @@ class QCalc:
         As such this method does not require a model of the game (environment) it only needs to know the states
         that formed part of the simulation.
 
+        :param agent: The agent to get the max for
         :param next_state: The state to estimate the max for
         :param kwargs: Optional arguments
         :return: The estimated max reward from the next_state + all (known) states at step + 1
@@ -144,68 +154,80 @@ class QCalc:
         os_max = np.nan
         if not next_state == self.END_STATE and next_state is not None:
             states_to_check = list()
-            states_to_check.append(next_state)  # Add current state to find max for
-            for u, v in self._graph.out_edges(next_state):  # Add all known next states to check max for
-                if v not in states_to_check:
-                    states_to_check.append(v)
+            for u, v in self._graph.out_edges(next_state):  # States of next player
+                for uu, vv in self._graph.out_edges(v):  # Next states of current player
+                    if vv not in states_to_check:
+                        states_to_check.append(vv)
             for state in states_to_check:
-                os_max = np.nanmax(np.array([os_max, np.nanmax(self._get_state_q_values(state))]))
+                os_max = np.nanmax(np.array([os_max, np.nanmax(self._get_state_q_values(agent, state))]))
                 self._trace.log().debug("1 Step : {} - {} - {}".format(next_state,
                                                                        state,
                                                                        os_max))
         return os_max
 
     def _naive_max(self,
+                   agent: str,
                    next_state: str,
                    **kwargs) -> np.float:
         """
         Estimate the max reward available from the next state by simply taking the max Q-Val from the
         next state.
-        :return: The max (estimated) reward available at the next state
+        :param agent: The Agent to get the max for
+        :param next_state: The next state to inspect
+        :return: The max (estimated) reward available at the next state for the given agent
         """
         n_max = np.nan
         if not next_state == self.END_STATE:
-            q_next_state = self._get_state_q_values(next_state)
+            q_next_state = self._get_state_q_values(agent, next_state)
             if not np.isnan(q_next_state).all():
                 n_max = np.nanmax(q_next_state)
         return n_max
 
     def _record_q_hist(self,
+                       agent: str,
                        state: str,
                        next_state: str,
                        ns_max: float,
                        action: int,
+                       reward: float,
                        old_q: float,
                        update: float,
                        new_q) -> None:
         """
         Record the update to Q for the given state
+        :param agent: The agent to record the history for
         :param state: The State the Q update relates to
         :param action: The action within the state the Q Value update relates to
+        :param reward: The reward for the action taken
         :param old_q: The Previous value of Q
         :param update: The Update made to Q
         :param new_q: The new value of Q
         :return:
         """
+        if agent not in self._q_hist:
+            self._q_hist[agent] = dict()
         hist_key = self.HIST_FMT.format(state, action)
         if hist_key not in self._q_hist:
-            self._q_hist[hist_key] = list()
-        self._q_hist[hist_key].append((next_state, ns_max, old_q, update, new_q))
+            self._q_hist[agent][hist_key] = list()
+        self._q_hist[agent][hist_key].append((next_state, action, reward, ns_max, old_q, update, new_q))
         return
 
     def get_q_hist(self,
+                   agent: str,
                    state: str,
-                   action: int) -> List[Tuple[str, float, float, float, float]]:
+                   action: int) -> List[Tuple[str, int, float, float, float, float, float]]:
         """
-        Get the history of updates for a given state - action Q Value
+        Get the history of updates for a given agent in teh given state - action Q Value
+        :param agent: The agent to get the history for.
         :param state: The state of interest
         :param action: The action within the state to get history for
         :return: List of Q Value Updates in order where an update = [next_state, next_state_max, old, update, new]
         """
         hist_key = self.HIST_FMT.format(state, action)
         res = None
-        if hist_key in self._q_hist:
-            res = self._q_hist[hist_key]
+        if agent in self._q_hist:
+            if hist_key in self._q_hist[agent]:
+                res = self._q_hist[agent][hist_key]
         return res
 
     def _update_q(self,
@@ -214,7 +236,7 @@ class QCalc:
                   action: int,
                   agent: str,
                   reward: float,
-                  max_func: Callable[[str, Dict], np.float]) -> None:
+                  max_func: Callable[[str, str, Dict], np.float]) -> None:
         """
         Update internal Q Values with the given State/Action/Reward update
         :param state: The current state
@@ -223,20 +245,26 @@ class QCalc:
         :param agent: The Agent (player) that took the given action
         :param reward: The reward on arrival in the next_state
         """
-        if state != self.END_STATE:
-            q_state = self._get_state_q_values(state)
-            q_prev = q_state[action]
-            if np.isnan(q_state[action]):
-                q_state[action] = float(0)
-            ns_max = max_func(next_state, agent=agent)  # noqa
-            if not np.isnan(ns_max):
-                q_update = self._learning_rate * (reward + (self._gamma * ns_max)) - q_state[action]
-            else:
-                q_update = (self._learning_rate * reward) - q_state[action]
-            q_state[action] = q_state[action] + q_update
-            # self._trace.log().info("{} -> {} @ {} - {:7.3f}".format(state, next_state, reward, q_state[action]))
-            self._set_state_q_values(state, q_state)
-            self._record_q_hist(state, next_state, ns_max, action, q_prev, q_update, q_state[action])
+        if state == '-1-10-11111-1':
+            print('x')
+        if next_state != self.END_STATE:
+            upd = [[1, agent], [-1, self._ttt.get_other_agent(agent).name()]]
+            for rfac, agnt in upd:
+                q_state = self._get_state_q_values(agnt, state)
+                q_val_prev = q_state[action]
+                next_state_max = max_func(agent=agnt, next_state=next_state)  # noqa
+                # Q[state, action] = Q[state, action] + lr * (reward + gamma * np.max(Q[new_state, :]) — Q[state, action])
+                if not np.isnan(next_state_max):
+                    q_update = self._learning_rate * (
+                            (reward * rfac) + self._gamma * next_state_max - self.zero_if_nan(q_val_prev))
+                else:
+                    q_update = self._learning_rate * ((reward * rfac) - self.zero_if_nan(q_val_prev))
+                # Advantage
+                q_state[action] = self.zero_if_nan(q_state[action]) + q_update
+                # self._trace.log().info("{} -> {} @ {} - {:7.3f}".format(state, next_state, reward, q_state[action]))
+                self._set_state_q_values(agent, state, q_state)
+                self._record_q_hist(agent, state, next_state, next_state_max, action, reward, q_val_prev, q_update,
+                                    q_state[action])
         return
 
     def _load_session(self,
@@ -250,7 +278,7 @@ class QCalc:
             self._events = self._ttt_event_stream.get_session(session_uuid=session_uuid)
             if self._events is None or len(self._events) == 0:
                 raise RuntimeError("No events for session uuid [{}]".format(session_uuid))
-            self._trace.log().info("Loaded [{}] events for session {}".format(len(self._events), session_uuid))
+            self._trace.log().info("Loaded [{}] evenhomets for session {}".format(len(self._events), session_uuid))
 
             self._visits = self._ttt_event_stream.load_visits_from_yaml(session_uuid=session_uuid)
             if self._visits is None or len(self._visits) == 0:
@@ -263,13 +291,13 @@ class QCalc:
             self._trace.log().info("Loaded [{}] graph nodes for session {}".format(len(self._graph), session_uuid))
         except RuntimeError as _:
             self._trace.log().error("Failed to load events for session [{}]".format(session_uuid))
-            self._events = None
-            self._graph = None
-            self._visits = None
+            self._events = None  # noqa
+            self._graph = None  # noqa
+            self._visits = None  # noqa
         return
 
     def calc_q(self,
-               reprocess_count: int = 1) -> Dict[str, QVals]:
+               reprocess_count: int = 1) -> Dict[str, Dict[str, QVals]]:
         """
         For yhe already loaded session calculate and update q values for event by episode.
         :param reprocess_count: The number of times to process the events to allow for q value propagation
@@ -326,3 +354,15 @@ class QCalc:
         :return: The raw events
         """
         return self._events
+
+    @staticmethod
+    def zero_if_nan(v: float) -> float:
+        """
+        Return zero if the value is NaN else return the value
+        :param v: The values to check
+        :return: Max ignoring NaN or 0 if all NaN
+        """
+        r = v
+        if np.isnan(r):
+            r = float(0)
+        return r

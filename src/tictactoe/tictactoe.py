@@ -29,7 +29,7 @@ class TicTacToe(Environment):
     __next_agent: Dict
     __agents = Dict
 
-    step_reward = float(-1)  # reward for playing an action
+    step_reward = float(0)  # reward for playing an action
     draw_reward = float(-10)  # reward for playing to end but no one wins
     win_reward = float(100)  # reward for winning a game
     __no_agent = None
@@ -671,6 +671,38 @@ class TicTacToe(Environment):
         if self.__agent == self.__x_agent:
             return self.__o_agent
         return self.__x_agent
+
+    def get_other_agent(self,
+                        agent) -> Agent:
+        """
+        Get the agent that is not the given agent
+        :param agent: Can be an Agent object, Agent name or Agent Id. If name or id given it must be the id or name of
+        an agent mapped as X or O agent.
+        :return: The Agent that is not the given Agent
+        """
+        other_agent = None
+        if isinstance(agent, Agent):
+            if self.__agent == self.__x_agent:
+                other_agent = self.__o_agent
+            else:
+                other_agent = self.__x_agent
+        elif type(agent) == str:
+            if agent == self.__x_agent.name():
+                other_agent = self.__o_agent
+            elif agent == self.__o_agent.name():
+                other_agent = self.__x_agent
+            else:
+                self.__trace.log().error("Cannot get other agent, [{}] is not valid agent name".format(agent))
+        elif type(agent) == int:
+            if agent == self.__x_agent.id():
+                other_agent = self.__o_agent
+            elif agent == self.__o_agent.id():
+                other_agent = self.__x_agent
+            else:
+                self.__trace.log().error("Cannot get other agent, [{}] is not valid agent name".format(str(agent)))
+        else:
+            self.__trace.log().error("Cannot get other agent given [{}]".format(str(agent)))
+        return other_agent
 
     def set_current_agent(self,
                           agent) -> None:

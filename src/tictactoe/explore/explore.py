@@ -320,3 +320,10 @@ class Explore:
                                                    depth))
                 self._ttt.import_state(prev_state)
         return
+
+    def get_visited(self) -> Dict[str, int]:
+        """
+        Get the dict of visted states
+        :return: Dictionary of visted states and associated visit count
+        """
+        return self._visited
