@@ -12,12 +12,14 @@ class GameNav(metaclass=abc.ABCMeta):
         cmd_run = "run"
         cmd_list = "list"
         cmd_head = "head"
+        cmd_set = "set"
 
     @unique
     class Action(IntEnum):
         run = -1
         list = -2
         head = -3
+        set = -4
 
         def __init__(self,
                      action: int):
@@ -30,6 +32,8 @@ class GameNav(metaclass=abc.ABCMeta):
                args=None):
             if self.value == GameNav.Action.run:
                 return nav.do_run(args)
+            if self.value == GameNav.Action.set:
+                return nav.do_set(args)
             if self.value == GameNav.Action.head:
                 return nav.do_head(args)
             return nav.do_list()
@@ -39,6 +43,14 @@ class GameNav(metaclass=abc.ABCMeta):
                args) -> None:
         """
         Execute a run of TicTacToe env for a specified number of games
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_set(self,
+               args) -> None:
+        """
+        Execute a set game based on a specific set of supplied moves
         """
         raise NotImplementedError()
 

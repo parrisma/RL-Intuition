@@ -26,8 +26,9 @@ class TicTacToe(Environment):
     __last_agent: Agent
     __x_agent: Agent
     __o_agent: Agent
-    __next_agent: Dict
-    __agents = Dict
+    __next_agent: Dict[str, Agent]
+    __agents = Dict[int, Agent]
+    __reward_map = Dict[float, float]
 
     step_reward = float(0)  # reward for playing an action
     draw_reward = float(-10)  # reward for playing to end but no one wins
@@ -64,9 +65,13 @@ class TicTacToe(Environment):
         :param x: The Agent to play the X role
         :param o: The Agent to play to O role
         """
-        self.__session_uuid = None
-        self.__episode_uuid = None
-        self.__episode_step = None
+        self.__reward_map = {self.step_reward: self.step_reward,
+                             self.draw_reward: self.draw_reward,
+                             self.win_reward: -self.win_reward}
+
+        self.__session_uuid = None  # noqa
+        self.__episode_uuid = None  # noqa
+        self.__episode_step = None  # noqa
 
         self.__ttt_event_stream = ttt_event_stream
         self.__trace = trace
@@ -82,7 +87,7 @@ class TicTacToe(Environment):
         self.__agents[self.__x_agent.id()] = self.__x_agent
         self._x_to_start = x_to_start
         self.__agent = self._reset_agent()
-        self.__last_agent = None
+        self.__last_agent = None  # noqa
 
         self.__x_agent.session_init(self.actions())
         self.__o_agent.session_init(self.actions())
@@ -177,7 +182,7 @@ class TicTacToe(Environment):
             state, agent, episode_uuid = self.episode_start()
             episodes.append(episode_uuid)
             while not self.episode_complete():
-                agent = self.__play_action(agent)
+                agent = self.play_action(agent)
                 i = len(episodes)
             if i % max(1, int(num_episodes / 10)) == 0:
                 self.__trace.log().info("Iteration: " + str(i))
@@ -367,8 +372,9 @@ class TicTacToe(Environment):
                 self.__last_agent = agent_id
         return next_agent
 
-    def __play_action(self,
-                      agent: Agent) -> Agent:
+    def play_action(self,
+                    agent: Agent,
+                    action_override: int = None) -> Agent:
         """
         Make the play chosen by the given agent. If it is a valid play
         confer reward and switch play to other agent. If invalid play
@@ -376,6 +382,7 @@ class TicTacToe(Environment):
         penalty and leave play with the same agent.
 
         :param agent: The Agent to play the next move
+        :param action_override: Optional action, if supplied this action is played in place of the action selected by the agent
         :return: The Agent that will play next
         """
 
@@ -383,7 +390,10 @@ class TicTacToe(Environment):
         state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
 
         # Make the play on the board.
-        action = agent.choose_action(state, self.actions_ids_left_to_take())
+        if action_override is not None:
+            action = action_override
+        else:
+            action = agent.choose_action(state, self.actions_ids_left_to_take())
         if action not in self.actions_ids_left_to_take():
             raise TicTacToe.IllegalActorAction("Actor Proposed Illegal action in current state :" + str(action))
         self.__take_action(action, agent)
@@ -671,6 +681,21 @@ class TicTacToe(Environment):
         if self.__agent == self.__x_agent:
             return self.__o_agent
         return self.__x_agent
+
+    def get_other_reward(self,
+                         reward: float
+                         ) -> float:
+        """
+        Return the reward from the perspective of the other play
+        Win to one agent is -Win (loss) to the other agent
+        Draw is the same to both agents as they both draw
+        Step is the same to both agents as they both 'pay' the same to play a move
+        :param reward: The reward to find the opposite
+        :return: The reward from the other perspective
+        """
+        if reward not in self.__reward_map:
+            raise RuntimeError("[{}] Unknown reward value, cannot find reward from other perspective".format(reward))
+        return self.__reward_map[reward]
 
     def get_other_agent(self,
                         agent) -> Agent:

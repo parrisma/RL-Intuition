@@ -15,6 +15,7 @@ class QVals:
     _O = 'O'
     _b = ' '
     _fmt = "[{}][{}][{}]  [{}][{}][{}]  [{}][{}][{}]  [{:6.2f}][{:6.2f}][{:6.2f}] "
+    _fmt_qvs = "[{:6.2f}][{:6.2f}][{:6.2f}] [{:6.2f}][{:6.2f}][{:6.2f}] [{:6.2f}][{:6.2f}][{:6.2f}]"
     _qv_fmt = '{:12.6f}'
     _qv_nan = '     --     '
     _sep = "_______________________________________________________________________________________"
@@ -109,4 +110,6 @@ class QVals:
         return "\n{}\n\n{}\n{}\n{}\n{}\n{}\n".format(self._sep, self._title, s1, s2, s3, self._sep)
 
     def __repr__(self):
-        return self.__str__()
+        return self._fmt_qvs.format(self.q_vals[0], self.q_vals[1], self.q_vals[2],
+                                    self.q_vals[3], self.q_vals[4], self.q_vals[5],
+                                    self.q_vals[6], self.q_vals[7], self.q_vals[8])

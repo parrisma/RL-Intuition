@@ -103,15 +103,9 @@ class RandomPlayAgent(Agent):
         # can be saved for later investigation: Will create visit & graph YAML files.
         #
         if self._explore is not None:
-            if self._prev_state is None:
-                self._prev_state = state
-
             step = np.nansum(np.abs(state.state_model_input()))
-            prev_state = self._explore.other(self).get_prev_state()
-            if prev_state is not None:
-                prev_state = prev_state.state_as_string()
-            self._explore.record(prev_state=prev_state,
-                                 curr_state=state.state_as_string(),
+            self._explore.record(prev_state=state.state_as_string(),
+                                 curr_state=next_state.state_as_string(),
                                  curr_state_is_episode_end=episode_complete,
                                  step=step)
             self._prev_state = state

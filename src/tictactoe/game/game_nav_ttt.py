@@ -1,3 +1,5 @@
+import os
+from typing import Tuple, List
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.interface.gamenav import GameNav
 from src.tictactoe.tictactoe import TicTacToe
@@ -17,6 +19,7 @@ class TTTGameNav(GameNav):
     _exploration: Explore
 
     RUN_FMT = "command is <run num_episodes>"
+    SET_FMT = "command is <run O|X a1 a2 a3 .. an> where an is an integer action in range 0 to 8"
     DONE_FMT = "Done running episodes, [{}] events saved to elastic db with session_uuid {}"
     HEAD_FMT = "command is <head session_uuid>"
     EVENT_FMT = "Episode UUID [{}] State [{}] Outcome [{}] Reward [{}]"
@@ -65,6 +68,74 @@ class TTTGameNav(GameNav):
                 self._trace.log().info(self.DONE_FMT.format(cnt, self._session_uuid))
             except Exception as _:
                 self._trace.log().info(self.RUN_FMT)
+        return
+
+    def _do_run_set_game(self,
+                         moves: Tuple[str]) -> None:
+        """
+        Run a set of defined moves
+        :param moves: Moves of form <Agent to play first move> <action-1> .. <action-n> e.g. X 0 6 2 8 1
+                      Moves must be valid and define a complete game.
+        """
+        if len(moves) < 6:
+            self._trace.log().info("SET: Must be a complete game of agent + at least 5 moves")
+        else:
+            agent = self._ttt.id_to_agent(moves[0])
+            self._trace.log().info("Running set game with {} to play first action".format(agent.name()))
+            self._ttt.episode_start()
+            for action in moves[1:]:
+                if not action.isnumeric():
+                    self._trace.log().info("Action {} skipped as it is not numeric".format(action))
+                else:
+                    if self._ttt.episode_complete():
+                        self._trace.log().info("Skipped action {} as game is over".format(action))
+                    else:
+                        self._trace.log().info("Agent {} plays action {}".format(agent.name(), action))
+                        agent = self._ttt.play_action(agent=agent, action_override=int(action))
+        return
+
+    def _do_set_parse(self,
+                      args) -> List[Tuple[str]]:
+        """
+        Parse the given args. If args[0] is a valid file name assume the file is a list of args
+        for teh set command and open it and return contents
+        :param args: The args to parse
+        :return: List of parsed args
+        """
+        arg_list = list()
+        parsed_args = self.parse(args)
+        if os.path.exists(parsed_args[0]):
+            self._trace.log().info("Loading set games from [{}]".format(parsed_args[0]))
+            with open(parsed_args[0]) as fp:
+                for line in fp:
+                    parsed_line = self.parse(line)
+                    if len(parsed_line) > 0:
+                        arg_list.append(parsed_line)
+            self._trace.log().info("Loaded {} set games".format(len(arg_list)))
+        else:
+            arg_list.append((parsed_args))  # noqa - we need to add a the tuple *not* the elements of the tuple
+        return arg_list
+
+    def do_set(self,
+               args) -> None:
+        """
+        Run the set moves of a complete game given in the form set O|X a1 a2 a3 .. an
+        """
+        if args is None or len(args) == 0:
+            self._trace.log().info(self.SET_FMT)
+        else:
+            arg_list = self._do_set_parse(args)
+            try:
+                for parsed_args in arg_list:
+                    self._do_run_set_game(parsed_args)
+                    if self._ttt.episode_complete():
+                        self._exploration.save(session_uuid=self._session_uuid, dir_to_use=self._dir_to_use)
+                        cnt = self._ttt_event_stream.count_session(session_uuid=self._session_uuid)
+                        self._trace.log().info(self.DONE_FMT.format(cnt, self._session_uuid))
+                    else:
+                        self._trace.log().info("Cannot save events as action set did not complete a game")
+            except Exception as _:
+                self._trace.log().info(self.SET_FMT)
         return
 
     def do_list(self) -> None:

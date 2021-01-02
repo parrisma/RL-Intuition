@@ -25,6 +25,8 @@ class ActionNav(metaclass=abc.ABCMeta):
         cmd_switch = "switch"
         cmd_list = "list"
         cmd_hist = "hist"
+        cmd_show = "show"
+        cmd_swap = "swap"
 
     @unique
     class Action(IntEnum):
@@ -44,6 +46,8 @@ class ActionNav(metaclass=abc.ABCMeta):
         switch = -4
         list = -5
         hist = -6
+        show = -7
+        swap = -8
 
         def __init__(self,
                      action: int):
@@ -66,6 +70,10 @@ class ActionNav(metaclass=abc.ABCMeta):
                 return nav.do_list()
             if self.value == ActionNav.Action.hist:
                 return nav.do_hist(args)
+            if self.value == ActionNav.Action.show:
+                return nav.do_show()
+            if self.value == ActionNav.Action.swap:
+                return nav.do_swap()
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -119,5 +127,19 @@ class ActionNav(metaclass=abc.ABCMeta):
     def do_list(self) -> None:
         """
         List all the session uuids to select from
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_show(self) -> None:
+        """
+        Show (or re-show) the details of the current game position
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_swap(self) -> None:
+        """
+        Swap perspectives for current agent - and show the Q Values for the other agent as seen by current agent
         """
         raise NotImplementedError()

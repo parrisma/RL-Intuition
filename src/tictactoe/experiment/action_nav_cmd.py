@@ -100,6 +100,18 @@ class ActionNavCmd(cmd.Cmd):
         self.prompt = self.prompt_default
         return
 
+    def do_show(self, arg):
+        """Show (or re-show) the details of the current game position"""
+        ActionNav.Action.show.do(self._nav)
+        self.prompt = self.prompt_default
+        return
+
+    def do_swap(self, arg):
+        """Swap perspectives for current agent - and show the Q Values for the other agent as seen by current agent"""
+        self.prompt = ActionNav.Action.swap.do(self._nav)
+        return
+
+    @staticmethod
     def do_bye(self, arg):
         """End navigation session"""
         return True

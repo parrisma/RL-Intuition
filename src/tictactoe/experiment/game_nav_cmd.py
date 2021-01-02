@@ -33,6 +33,11 @@ class GameNavCmd(cmd.Cmd):
         GameNav.Action.head.do(self._nav, args=arg)
         return
 
+    def do_set(self, arg):
+        """Run a set piece game of specific moves"""
+        GameNav.Action.set.do(self._nav, args=arg)
+        return
+
     def do_bye(self, arg):
         """End navigation session"""
         return True
