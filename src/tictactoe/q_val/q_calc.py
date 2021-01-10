@@ -53,7 +53,7 @@ class QCalc:
 
     END_STATE = "End"
 
-    HIST_FMT = "{}:{}"
+    HIST_FMT = "{}:{}={}"
 
     def __init__(self,
                  trace: Trace,
@@ -193,7 +193,7 @@ class QCalc:
             self._players[player] = QCalc.Player()
         if agent not in self._players[player].q_hist:
             self._players[player].q_hist[agent] = dict()
-        hist_key = self.HIST_FMT.format(state, action)
+        hist_key = self.HIST_FMT.format(state, agent, action)
         if hist_key not in self._players[player].q_hist[agent]:
             self._players[player].q_hist[agent][hist_key] = list()
         return hist_key
@@ -221,8 +221,6 @@ class QCalc:
         :return:
         """
         hist_key = self._init_hist(player, agent, state, action)
-        if player == 'X' and agent == 'X' and next_state == "100000000":
-            a = 1
         self._players[player].q_hist[agent][hist_key].append((next_state, action, reward, ns_max, old_q, update, new_q))
         return
 
@@ -269,8 +267,10 @@ class QCalc:
         """
         other_agent = self._ttt.get_other_agent(agent).name()
         other_reward = self._ttt.get_other_reward(reward)
-        perspectives = [[agent, [[agent, reward], [other_agent, other_reward]]],
-                        [other_agent, [[agent, reward], [other_agent, other_reward]]]
+        # ,
+        #                         [other_agent, [[agent, other_reward], [other_agent, reward]]]
+        perspectives = [[agent, [[agent, reward]]],
+                        [other_agent, [[agent, other_reward]]]
                         ]
         # Both players must see all actions
         for player, view in perspectives:
@@ -310,8 +310,8 @@ class QCalc:
         if next_state != self.END_STATE:
             q_state = self._get_state_q_values(player, agent, state)  # Current Q Values for entire state
             q_val_prev = q_state[action]  # Current Q Value for specific action
-            # oa = self._ttt.get_other_agent(agent).name()
-            next_state_max = self.zero_if_nan(max_func(player=player, agent=agent, next_state=next_state))  # noqa
+            oa = self._ttt.get_other_agent(agent).name()
+            next_state_max = self.zero_if_nan(max_func(player=player, agent=oa, next_state=next_state))  # noqa
             q_update = self._learning_rate * (reward + self._gamma * next_state_max - self.zero_if_nan(q_val_prev))
             q_state[action] = self.zero_if_nan(q_val_prev) + q_update
             self._set_state_q_values(player, agent, state, q_state)
@@ -330,7 +330,7 @@ class QCalc:
             self._events = self._ttt_event_stream.get_session(session_uuid=session_uuid)
             if self._events is None or len(self._events) == 0:
                 raise RuntimeError("No events for session uuid [{}]".format(session_uuid))
-            self._trace.log().info("Loaded [{}] evenhomets for session {}".format(len(self._events), session_uuid))
+            self._trace.log().info("Loaded [{}] events for session {}".format(len(self._events), session_uuid))
 
             self._visits = self._ttt_event_stream.load_visits_from_yaml(session_uuid=session_uuid)
             if self._visits is None or len(self._visits) == 0:
