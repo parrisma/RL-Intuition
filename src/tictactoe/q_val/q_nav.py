@@ -21,7 +21,6 @@ class QNav(ActionNav):
     _dir_to_use: str
     _q_calc: QCalc
     _exploration: Explore
-    _perspective: str
 
     _Q_HIST_FMT = "{} : {} : Action: [{}] Reward [{:12.6f}] Ns Max [{:12.6f}] Old [{:12.6f}] Update [{:12.6f}] New [{:12.6f}]"
     _FMT = "[{}][{}][{}]  [{}][{}][{}]"
@@ -42,10 +41,8 @@ class QNav(ActionNav):
         self._ttt = ttt
         self._players = dict()
         self._reset()
-        self._perspective = self._ttt.get_current_agent().name()
         self._show(agent=self._ttt.get_current_agent().name(),
-                   state=self._ttt.state().state_as_string(),
-                   perspective=self._perspective)
+                   state=self._ttt.state().state_as_string())
         self._exploration = None  # noqa
         self._q_calc = None  # noqa
         return
@@ -57,32 +54,18 @@ class QNav(ActionNav):
         """
         return len(self._players) > 0 and self._exploration is not None
 
-    def _set_perspective(self,
-                         swap: bool = False) -> None:
-        """
-        If swap is True set the current perspective to that of the other agent else set perspective to that of
-        current agent
-        :param swap:
-        """
-        if swap:
-            self._perspective = self._ttt.get_other_agent(self._perspective).name()
-        else:
-            self._perspective = self._ttt.get_current_agent().name()
-        return
-
     def _episode_start(self):
         """
         Start a new episode and reset perspective
         """
         self._ttt.episode_start()  # ensure we are in a known state
-        self._set_perspective()
         return
 
     def _greedy_action(self,
                        q_vals: np.ndarray) -> int:
         """
         Return the valid action associated with the highest reward
-        :return: The action to maximise reward
+        :return: The optimal action for the agent to take
         """
         greedy_actn = None
         if self._ttt.episode_complete():
@@ -145,22 +128,20 @@ class QNav(ActionNav):
 
     def _show(self,
               agent: str,
-              state: str,
-              perspective: str) -> None:
+              state: str) -> None:
         """
         Show the Q Values for the current state
         :param agent: The agent to show q values for
         :param state: The State (as string) to show Q Values for
         """
         if len(self._players) > 0:
-            if state in self._players[agent].q_values[perspective]:
-                q_vals = self._players[agent].q_values[perspective][state]
+            if state in self._players[agent].q_values[agent]:
+                q_vals = self._players[agent].q_values[agent][state]
                 self._trace.log().info("\n{}".format(q_vals))
                 self._trace.log().info("Greedy Action [{}]".format(self._greedy_action(q_vals=q_vals.q_vals)))
                 self._show_state_visit_data()
             else:
-                self._trace.log().info("No Values for Agent {} with perspective {} in state {}".format(
-                    agent, perspective, state))
+                self._trace.log().info("No Values for Agent {} in state {}".format(agent, state))
         else:
             self._trace.log().info("Use the load <session_uuid> command to get started")
         return
@@ -186,8 +167,7 @@ class QNav(ActionNav):
         :return: The Player specific prompt
         """
         if self._ready():
-            p = "(Agent-{}:{})".format(self._ttt.get_current_agent().name(),
-                                       self._perspective)
+            p = "(Agent-{})".format(self._ttt.get_current_agent().name())
         else:
             p = "(Use [list] or [load] to start or [help list] / [help load]"
         return p
@@ -200,7 +180,6 @@ class QNav(ActionNav):
         :param agent: The agent to make the current agent
         """
         self._ttt.set_current_agent(agent)
-        self._set_perspective()
         return
 
     def do_hist(self,
@@ -262,14 +241,11 @@ class QNav(ActionNav):
                             self._ttt.import_state(st)
                             self._set_agent(agent=agnt)
                         else:
-                            self._last.append([self._ttt.state_action_str(), "{}".
-                                              format(agent)])
+                            self._last.append([self._ttt.state_action_str(), self._ttt.get_current_agent().name()])
                             self._show(agent=self._ttt.get_current_agent().name(),
-                                       state=self._ttt.state().state_as_string(),
-                                       perspective=self._perspective)
+                                       state=self._ttt.state().state_as_string())
             if self._ttt.episode_complete():
                 self._trace.log().info("This is the end of this episode sequence, use [home] command to reset")
-        self._set_perspective()
         return self._prompt()
 
     def do_back(self) -> str:
@@ -278,13 +254,12 @@ class QNav(ActionNav):
         """
         if self._ready():
             if len(self._last) > 1:
-                self._last.pop()
+                _, _ = self._last.pop()
                 st, agnt = self._last[-1]
                 self._ttt.import_state(st)
                 self._set_agent(agent=agnt)
                 self._show(agent=self._ttt.get_current_agent().name(),
-                           state=self._ttt.state().state_as_string(),
-                           perspective=self._perspective)
+                           state=self._ttt.state().state_as_string())
             else:
                 self._trace.log().info("Cannot go back because we are at initial (root) state")
         else:
@@ -299,8 +274,7 @@ class QNav(ActionNav):
             self._episode_start()
             self._last = self._last_reset()
             self._show(agent=self._ttt.get_current_agent().name(),
-                       state=self._ttt.state().state_as_string(),
-                       perspective=self._perspective)
+                       state=self._ttt.state().state_as_string())
         else:
             self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
         return self._prompt()
@@ -312,8 +286,7 @@ class QNav(ActionNav):
         if self._ready():
             self._set_agent(agent=self._ttt.get_next_agent().name())
             self._show(agent=self._ttt.get_current_agent().name(),
-                       state=self._ttt.state().state_as_string(),
-                       perspective=self._perspective)
+                       state=self._ttt.state().state_as_string())
         else:
             self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
 
@@ -374,8 +347,7 @@ class QNav(ActionNav):
         """
         if self._ready():
             self._show(agent=self._ttt.get_current_agent().name(),
-                       state=self._ttt.state().state_as_string(),
-                       perspective=self._perspective)
+                       state=self._ttt.state().state_as_string())
         else:
             self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
         return self._prompt()
@@ -385,10 +357,8 @@ class QNav(ActionNav):
         Swap perspectives for current agent - and show the Q Values for the other agent as seen by current agent
         """
         if self._ready():
-            self._set_perspective(swap=True)
             self._show(agent=self._ttt.get_current_agent().name(),
-                       state=self._ttt.state().state_as_string(),
-                       perspective=self._perspective)
+                       state=self._ttt.state().state_as_string())
         else:
             self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
         return self._prompt()

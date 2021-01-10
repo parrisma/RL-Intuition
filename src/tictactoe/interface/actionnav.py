@@ -26,7 +26,6 @@ class ActionNav(metaclass=abc.ABCMeta):
         cmd_list = "list"
         cmd_hist = "hist"
         cmd_show = "show"
-        cmd_swap = "swap"
 
     @unique
     class Action(IntEnum):
@@ -47,7 +46,6 @@ class ActionNav(metaclass=abc.ABCMeta):
         list = -5
         hist = -6
         show = -7
-        swap = -8
 
         def __init__(self,
                      action: int):
@@ -72,39 +70,41 @@ class ActionNav(metaclass=abc.ABCMeta):
                 return nav.do_hist(args)
             if self.value == ActionNav.Action.show:
                 return nav.do_show()
-            if self.value == ActionNav.Action.swap:
-                return nav.do_swap()
             return nav.do_action(self._action)
 
     @abc.abstractmethod
     def do_action(self,
-                  action: int) -> None:
+                  action: int) -> str:
         """
         Navigate the structure by following the given action
         :param action: The action to navigate by
+        :return: The Nav prompt as string
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def do_hist(self,
-                action: int) -> None:
+                action: int) -> str:
         """
         Show the Q VAlue history for the given action in the current state
         :param action: The action to show Q Value history for
+        :return: The Nav prompt as string
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def do_back(self) -> None:
+    def do_back(self) -> str:
         """
         Navigate back to the previous state is there was one
+        :return: The Nav prompt as string
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def do_home(self) -> None:
+    def do_home(self) -> str:
         """
         Navigate to the initial state
+        :return: The Nav prompt as string
         """
         raise NotImplementedError()
 
@@ -117,9 +117,10 @@ class ActionNav(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def do_switch(self) -> None:
+    def do_switch(self) -> str:
         """
         Switch perspective to other player e.g. O -> X or X -> O
+        :return: The Nav prompt as string
         """
         raise NotImplementedError()
 
@@ -131,15 +132,9 @@ class ActionNav(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def do_show(self) -> None:
+    def do_show(self) -> str:
         """
         Show (or re-show) the details of the current game position
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def do_swap(self) -> None:
-        """
-        Swap perspectives for current agent - and show the Q Values for the other agent as seen by current agent
+        :return: The Nav prompt as string
         """
         raise NotImplementedError()

@@ -153,7 +153,7 @@ class TTTGameNav(GameNav):
     def do_head(self,
                 args) -> None:
         """
-        Show the first 10 Game events for teh given session
+        Show the first 10 Game events for the given session
         """
         if args is None or len(args) == 0:
             self._trace.log().info(self.HEAD_FMT)
