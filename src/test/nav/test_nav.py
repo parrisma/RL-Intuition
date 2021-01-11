@@ -5,7 +5,7 @@ from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
 from src.lib.streams.webstream import WebStream
 from src.tictactoe.interface.actionnav import ActionNav
-from src.tictactoe.experiment.action_nav_cmd import ActionNavCmd
+from src.tictactoe.experiment2.action_nav_cmd import ActionNavCmd
 from src.test.nav.dummy_nav import DummyNav
 
 

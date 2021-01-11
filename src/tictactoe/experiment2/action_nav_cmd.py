@@ -106,6 +106,11 @@ class ActionNavCmd(cmd.Cmd):
         self.prompt = self.prompt_default
         return
 
+    def do_dump(self, arg):
+        """Dump the nominated structure as local JSON file"""
+        self.prompt = ActionNav.Action.dump.do(self._nav, args=arg)
+        return
+
     @staticmethod
     def do_bye(self, arg):
         """End navigation session"""

@@ -26,6 +26,7 @@ class ActionNav(metaclass=abc.ABCMeta):
         cmd_list = "list"
         cmd_hist = "hist"
         cmd_show = "show"
+        cmd_dump = "dump"
 
     @unique
     class Action(IntEnum):
@@ -46,6 +47,7 @@ class ActionNav(metaclass=abc.ABCMeta):
         list = -5
         hist = -6
         show = -7
+        dump = -8
 
         def __init__(self,
                      action: int):
@@ -70,6 +72,8 @@ class ActionNav(metaclass=abc.ABCMeta):
                 return nav.do_hist(args)
             if self.value == ActionNav.Action.show:
                 return nav.do_show()
+            if self.value == ActionNav.Action.dump:
+                return nav.do_dump(args)
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -135,6 +139,15 @@ class ActionNav(metaclass=abc.ABCMeta):
     def do_show(self) -> str:
         """
         Show (or re-show) the details of the current game position
+        :return: The Nav prompt as string
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_dump(self,
+                data_type_to_dump: str) -> str:
+        """
+        Dump the nominated set of values to local file in JSON format
         :return: The Nav prompt as string
         """
         raise NotImplementedError()

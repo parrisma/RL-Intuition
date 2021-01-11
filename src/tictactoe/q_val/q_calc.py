@@ -44,8 +44,8 @@ class QCalc:
     _graph: nx.DiGraph
     _session_uuid: str
     _ttt: TicTacToe
-    _max_func_idx: int
-    _max_funcs: List[Callable[[str, str, str, Dict], np.float]]
+    _optimal_func_idx: int
+    _optimal_funcs: List[Callable[[str, str, str, Dict], np.float]]
     _players: Dict[str, Player]
 
     NAIVE_MAX = 0
@@ -79,9 +79,9 @@ class QCalc:
                               x=agent_factory.new_x_agent(),
                               o=agent_factory.new_o_agent())
 
-        self._max_funcs = [self._naive_max,  # NAIVE_MAX
-                           self._one_step_max]  # ONE_STEP_MAX
-        self._max_func_idx = self.ONE_STEP_MAX
+        self._optimal_funcs = [self._naive_max,  # NAIVE_MAX
+                               self._one_step_max]  # ONE_STEP_MAX
+        self._optimal_func_idx = self.ONE_STEP_MAX
 
         self._players = dict()
 
@@ -371,14 +371,14 @@ class QCalc:
                                             action=int(self._events[event_to_process].action),
                                             agent=self._events[event_to_process].agent,
                                             reward=self._events[event_to_process].reward,
-                                            max_func=self._max_funcs[self._max_func_idx])
+                                            max_func=self._optimal_funcs[self._optimal_func_idx])
                     else:
                         self._update_q_vals(state=self._events[event_to_process].state.state_as_string(),
                                             next_state=self.END_STATE,
                                             action=int(self._events[event_to_process].action),
                                             agent=self._events[event_to_process].agent,
                                             reward=self._events[event_to_process].reward,
-                                            max_func=self._max_funcs[self._max_func_idx])
+                                            max_func=self._optimal_funcs[self._optimal_func_idx])
                     event_to_process += 1
                     if event_to_process % rept == 0:
                         self._trace.log().info(
@@ -386,6 +386,7 @@ class QCalc:
             self._trace.log().info("Done Q Value Calc")
         else:
             self._trace.log().error("No TicTacToe event data for session [{}]".format(self._session_uuid))
+        x = self.q_vals_as_simple()
         return self._players
 
     def get_visits(self) -> Dict[str, int]:
@@ -408,6 +409,22 @@ class QCalc:
         :return: The raw events
         """
         return self._events
+
+    def q_vals_as_simple(self) -> Dict[str, Dict[str, Dict[str, List[float]]]]:
+        """
+        Render the Q Values as simple data structures so they can be encoded as JSON
+            Dict[player, Dict[agent, Dict[state, List[q-values]]]]
+        :return: Q Values for as Dict[str, Dict[str, Dict[str, List[float]]]]
+        """
+        simple = dict()
+        for k1, v1 in self._players.items():
+            simple[k1] = dict()
+            for k2, v2 in v1.q_values.items():
+                simple[k1][k2] = dict()
+                for k3, v3 in v2.items():
+                    simple[k1][k2][k3] = v3.q_vals.tolist()
+
+        return simple
 
     @staticmethod
     def zero_if_nan(v: float) -> float:

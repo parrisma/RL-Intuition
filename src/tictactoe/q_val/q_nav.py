@@ -5,6 +5,7 @@ from src.lib.rltrace.trace import Trace
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.q_val.q_calc import QCalc
+from src.tictactoe.q_val.q_vals_json import QValsJson
 from src.tictactoe.explore.explore import Explore
 
 
@@ -21,6 +22,7 @@ class QNav(ActionNav):
     _dir_to_use: str
     _q_calc: QCalc
     _exploration: Explore
+    _uuid: str
 
     _Q_HIST_FMT = "{} : {} : Action: [{}] Reward [{:12.6f}] Ns Max [{:12.6f}] Old [{:12.6f}] Update [{:12.6f}] New [{:12.6f}]"
     _FMT = "[{}][{}][{}]  [{}][{}][{}]"
@@ -29,6 +31,9 @@ class QNav(ActionNav):
     _X = 'X'
     _O = 'O'
     _B = '-'
+    _FUNC = 0
+    _DESC = 1
+    _DUMP_TYPES = {"Q": ["_dump_q_values", "Q Values"]}
 
     def __init__(self,
                  ttt: TicTacToe,
@@ -45,6 +50,7 @@ class QNav(ActionNav):
                    state=self._ttt.state().state_as_string())
         self._exploration = None  # noqa
         self._q_calc = None  # noqa
+        self._uuid = None  # noqa
         return
 
     def _ready(self) -> bool:
@@ -325,6 +331,7 @@ class QNav(ActionNav):
                                         ttt_event_stream=self._ttt_event_stream,
                                         visited=self._q_calc.get_visits(),
                                         graph=self._q_calc.get_graph())
+            self._uuid = uuid
             self._trace.log().info("Done Q-Val Cals")
             self.do_home()
         return self._prompt()
@@ -359,6 +366,41 @@ class QNav(ActionNav):
         if self._ready():
             self._show(agent=self._ttt.get_current_agent().name(),
                        state=self._ttt.state().state_as_string())
+        else:
+            self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
+        return self._prompt()
+
+    def _dump_q_values(self):
+        """
+        Dump current Q Values
+        :return:
+        """
+        try:
+            filename = "{}\\q_vals_{}.json".format(self._dir_to_use, self._uuid)
+            QValsJson.save_q_values_as_json(q_vals=self._q_calc.q_vals_as_simple(), filename=filename)
+            self._trace.log().info("Q Values saved as JSON to [{}]".format(filename))
+        except Exception as e:
+            self._trace.log().info(str(e))
+        return
+
+    def do_dump(self,
+                arg) -> str:
+        """
+        Dump the nominated data as local JSON file
+        """
+        if self._ready():
+            args = self.parse(arg)
+            if len(args) == 1:
+                data_type = args[0].upper()
+                if data_type in self._DUMP_TYPES:
+                    getattr(self, self._DUMP_TYPES[data_type][self._FUNC])()  # lookup & call the dump function
+                else:
+                    type_help = ""
+                    for k, v in self._DUMP_TYPES.items():
+                        type_help = "{}, {} - {}".format(type_help, k, v[self._DESC])
+                    self._trace.log().info("Dump command supports types {}".format(type_help))
+            else:
+                self._trace.log().info("Dump command requires data type to dump")
         else:
             self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
         return self._prompt()

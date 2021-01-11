@@ -1,0 +1,278 @@
+{
+  "O": {
+    "O": {
+      "000000000": [
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "001-100000": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        0.0
+      ],
+      "-101-100001": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        10.0,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "00-1000000": [
+        NaN,
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "00-110000-1": [
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "10-110-100-1": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    "X": {
+      "001000000": [
+        NaN,
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "001-100001": [
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "-101-101001": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "000000000": [
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "00-1100000": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        0.0
+      ],
+      "10-110000-1": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        -10.0,
+        NaN,
+        NaN,
+        NaN
+      ]
+    }
+  },
+  "X": {
+    "O": {
+      "000000000": [
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "001-100000": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        0.0
+      ],
+      "-101-100001": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        -10.0,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "00-1000000": [
+        NaN,
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "00-110000-1": [
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "10-110-100-1": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ]
+    },
+    "X": {
+      "001000000": [
+        NaN,
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "001-100001": [
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "-101-101001": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "000000000": [
+        NaN,
+        NaN,
+        0.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN
+      ],
+      "00-1100000": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        0.0
+      ],
+      "10-110000-1": [
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        10.0,
+        NaN,
+        NaN,
+        NaN
+      ]
+    }
+  }
+}

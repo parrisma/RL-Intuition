@@ -8,7 +8,7 @@ class GameNav(metaclass=abc.ABCMeta):
     """
 
     @unique
-    class StateCmd(Enum):
+    class GameCmd(Enum):
         cmd_run = "run"
         cmd_list = "list"
         cmd_head = "head"

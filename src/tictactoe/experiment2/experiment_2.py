@@ -1,7 +1,7 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 from src.tictactoe.q_val.q_nav import QNav
-from src.tictactoe.experiment.action_nav_cmd import ActionNavCmd
+from src.tictactoe.experiment2.action_nav_cmd import ActionNavCmd
 
 
 class Experiment2(ExperimentBase):
