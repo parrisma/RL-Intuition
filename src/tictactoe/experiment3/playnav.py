@@ -31,7 +31,7 @@ class PlayNav(metaclass=abc.ABCMeta):
             if self.value == PlayNav.Action.x:
                 return nav.do_x(args)
             if self.value == PlayNav.Action.o:
-                return nav.do_x(args)
+                return nav.do_o(args)
             if self.value == PlayNav.Action.play:
                 return nav.do_play(args)
             return

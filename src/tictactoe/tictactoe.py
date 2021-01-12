@@ -48,6 +48,10 @@ class TicTacToe(Environment):
     attribute_board = (
         "board", "The game board as a numpy array (3,3), np.nan => no move else the id of the agent", np.array)
     __episode = 'episode number'
+    _X = 0
+    _O = 1
+    _D = 2
+    _STAT_FMT = "Iter {:5} :- X Win [{:5}] O Win [{:5}] Draw [{:5}] as % X [{:6.2f}], O [{:6.2f}] D[{:6.2f}]"
 
     #
     # Constructor has no arguments as it just sets the game
@@ -61,9 +65,11 @@ class TicTacToe(Environment):
                  x_to_start: bool = None):
         """
         Establish TicTacToe environment with both Agents ready to play
-        :param env: The Environment to attach to
+        :param trace: Trace handle
+        :param ttt_event_stream: THe event stream to write logs to
         :param x: The Agent to play the X role
-        :param o: The Agent to play to O role
+        :param o: The Agent to play the O role
+        :param x_to_start: (optional) X Always starts if true
         """
         self.__reward_map = {self.step_reward: self.step_reward,
                              self.draw_reward: self.draw_reward,
@@ -147,7 +153,7 @@ class TicTacToe(Environment):
         """
         if self.__episode_uuid is not None:
             self.__trace.log().debug("End Episode [{}]".format(self.__episode_uuid))
-            self.__episode_uuid = None
+            self.__episode_uuid = None  # noqa
             self.__episode_step = 0
         return
 
@@ -158,7 +164,7 @@ class TicTacToe(Environment):
         if self.__session_uuid is not None:
             self.__trace.log().debug("End Session [{}]".format(self.__session_uuid))
             self.__episode_end()
-            self.__session_uuid = None
+            self.__session_uuid = None  # noqa
         return
 
     def __session_start(self) -> None:
@@ -170,29 +176,70 @@ class TicTacToe(Environment):
         self.__trace.log().debug("Start Session [{}]".format(self.__session_uuid))
         return
 
-    def run(self, num_episodes: int) -> List[str]:
+    def run(self,
+            num_episodes: int,
+            simple_stats: bool = False) -> List[str]:
         """
         Play the given number of episodes with the Agents supplied as part of class Init. Select a random Agent
         to go at the start of each episode.
         :param num_episodes: The number of episodes to play
+        :param simple_stats: If True log the win/lose/draw result of each game
+        :return: The list of episode UUIDs or if simple_stats enabled with W/L/D status of each game
         """
         episodes = list()
+        stats = np.zeros(3, dtype=np.int)
         i = 0
         while len(episodes) < num_episodes:
             state, agent, episode_uuid = self.episode_start()
-            episodes.append(episode_uuid)
             while not self.episode_complete():
                 agent = self.play_action(agent)
-                i = len(episodes)
-            if i % max(1, int(num_episodes / 10)) == 0:
-                self.__trace.log().info("Iteration: " + str(i))
-
+            self.__stats(stats, episodes, episode_uuid, simple_stats, num_episodes)
             state = TicTacToeState(self.__board, self.__x_agent, self.__o_agent)
             self.__x_agent.episode_complete(state)
             self.__o_agent.episode_complete(state)
         self.__x_agent.terminate()
         self.__o_agent.terminate()
         return episodes
+
+    def __stats(self,
+                stats: np.ndarray,
+                episodes: List[str],
+                episode_uuid: str,
+                simple_stats: bool,
+                num_episodes: int) -> None:
+        """
+        Record game stats
+        :param stats: Running total of x win, o win, draw
+        :param episodes: The list of running stats to update
+        :param episode_uuid: The UUID of the current episode
+        :param simple_stats: If True log the win/lose/draw result of each game
+        :param num_episodes: The total number of episodes being run
+        """
+        if simple_stats:
+            episodes.append(self.__episode_state().as_str())
+            if episodes[-1] == TicTacToeBoardState.x_win.as_str():
+                stats[self._X] += 1
+            elif episodes[-1] == TicTacToeBoardState.o_win.as_str():
+                stats[self._O] += 1
+            elif episodes[-1] == TicTacToeBoardState.draw.as_str():
+                stats[self._D] += 1
+            else:
+                pass
+        else:
+            episodes.append(episode_uuid)
+        i = len(episodes)
+        if i % max(1, int(num_episodes / 10)) == 0:
+            if simple_stats:
+                pct = (stats.copy() * 1.0)
+                pct /= np.sum(pct)
+                pct *= 100
+                self.__trace.log().info(self._STAT_FMT.format(
+                    i,
+                    stats[self._X], stats[self._O], stats[self._D],
+                    pct[self._X], pct[self._O], pct[self._D]))
+            else:
+                self.__trace.log().info("Iteration: " + str(i))
+        return
 
     @classmethod
     def __empty_board(cls):
@@ -296,6 +343,7 @@ class TicTacToe(Environment):
         The numeric id of an agent associated with this TTT instance
         An instance of an Agent
         :param agent_id: The numerical Id or name of the agent
+        :param other: If true return details of the agent
         :return: The matching Agent or none if no match
         """
         agent = None
@@ -382,7 +430,8 @@ class TicTacToe(Environment):
         penalty and leave play with the same agent.
 
         :param agent: The Agent to play the next move
-        :param action_override: Optional action, if supplied this action is played in place of the action selected by the agent
+        :param action_override: Optional action, if supplied this action is played in place of the action selected by
+               the agent
         :return: The Agent that will play next
         """
 
@@ -501,7 +550,7 @@ class TicTacToe(Environment):
                          state: State = None) -> bool:
         """
         Return True if the given game state represents a terminal game state
-        :param state: Optional game state to test episode complete ibon, else use current internal board state
+        :param state: Optional game state to test episode complete on, else use current internal board state
         :return: True if episode is complete for requested state or internal board state
         """
         if state is not None:

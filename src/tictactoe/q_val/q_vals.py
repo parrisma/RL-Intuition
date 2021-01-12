@@ -35,7 +35,7 @@ class QVals:
         """
         Set the initial state of teh Q Values. By default all Q Values are initially NaN to indicate that there
         is no know value.
-        :return: Initial Q Vales as ndarry
+        :return: Initial Q Vales as ndarray
         """
         return np.full((9), np.nan)
 

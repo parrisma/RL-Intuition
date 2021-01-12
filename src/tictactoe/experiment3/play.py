@@ -1,7 +1,9 @@
+from enum import Enum, unique
 from src.tictactoe.experiment3.playnav import PlayNav
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
+from src.tictactoe.random_play_agent import RandomPlayAgent
 
 
 class Play(PlayNav):
@@ -13,6 +15,18 @@ class Play(PlayNav):
     _ttt_event_stream: TicTacToeEventStream
     _dir_to_use: str
 
+    _FUNC = 0
+    _DESC = 1
+    _AGENT_TYPES = {"R": ["_random_agent", "Random Agent"]}
+
+    _RUN_FMT = "command is <play num_episodes>"
+    _RUN_FAIL = "command <play> failed with error [{}]"
+
+    @unique
+    class Player(Enum):
+        player_x = "X"
+        player_o = "O"
+
     def __init__(self,
                  ttt: TicTacToe,
                  ttt_event_stream: TicTacToeEventStream,
@@ -22,6 +36,8 @@ class Play(PlayNav):
         self._trace = trace
         self._ttt_event_stream = ttt_event_stream
         self._ttt = ttt
+        self._x_agent = None
+        self._o_agent = None
         return
 
     def _ready(self) -> bool:
@@ -29,7 +45,7 @@ class Play(PlayNav):
         True if the agents are created and ready to play
         :return: True if both agents are created and ready to play
         """
-        return False
+        return self._x_agent is not None and self._o_agent is not None
 
     def do_x(self,
              arg) -> str:
@@ -38,7 +54,7 @@ class Play(PlayNav):
         :param arg: The parameters needed to create the X Agent
         :return: The Nav prompt as string
         """
-        _ = self.parse(arg)
+        self._create_agent(self.Player.player_x, arg)
         return self._prompt()
 
     def do_o(self,
@@ -48,8 +64,55 @@ class Play(PlayNav):
         :param arg: The parameters needed to create the O Agent
         :return: The Nav prompt as string
         """
-        _ = self.parse(arg)
+        self._create_agent(self.Player.player_o, arg)
         return self._prompt()
+
+    def _create_agent(self,
+                      player: Player,
+                      arg) -> None:
+        """
+        Create a TicTacToe agent of the requested type
+        :param player: The Player (X|O) to create the agent as
+        :param arg: The parameters required to create / define the agent
+        :return:
+        """
+        args = self.parse(arg)
+        if args is not None:
+            data_type = args[0].upper()
+            if data_type in self._AGENT_TYPES:
+                # lookup & call the agent create function
+                getattr(self, self._AGENT_TYPES[data_type][self._FUNC])(player, arg)
+            else:
+                self._trace.log().info("You must specify a valid agent type from {}".format(self._agent_type_help()))
+        else:
+            self._trace.log().info("You must specify a valid agent type from {}".format(self._agent_type_help()))
+        return
+
+    def _random_agent(self,
+                      player: Player,
+                      _) -> None:
+        """
+        Create an agent that selects plays at random
+        :param player: The Player to create the random agent for.
+        :return: A random play Agent
+        """
+        if player == self.Player.player_o:
+            self._o_agent = RandomPlayAgent.RandomAgentFactory().new_o_agent()
+            self._trace.log().info("Agent O created as Random Agent")
+        else:
+            self._x_agent = RandomPlayAgent.RandomAgentFactory().new_x_agent()
+            self._trace.log().info("Agent X created as Random Agent")
+        return
+
+    def _agent_type_help(self) -> str:
+        """
+        Help string listing the supported agent types
+        :return: List of valid agent types
+        """
+        agent_help = ""
+        for k, v in self._AGENT_TYPES.items():
+            agent_help = "{}, {} - {}".format(agent_help, k, v[self._DESC])
+        return agent_help
 
     def do_play(self,
                 arg) -> str:
@@ -58,7 +121,26 @@ class Play(PlayNav):
         :param arg: The parameters needed to create the O Agent
         :return: The Nav prompt as string
         """
-        _ = self.parse(arg)
+        if self._ready():
+            if arg is None or len(arg) == 0:
+                self._trace.log().info(self._RUN_FMT)
+                return self._prompt()
+            parsed_args = self.parse(arg)
+            if len(parsed_args) != 1:
+                self._trace.log().info(self._RUN_FMT)
+            else:
+                try:
+                    self._ttt = TicTacToe(trace=self._trace,
+                                          ttt_event_stream=self._ttt_event_stream,
+                                          x=self._x_agent,
+                                          o=self._o_agent)
+                    num_episodes = int(parsed_args[0])
+                    self._trace.log().info("Running {} TTT episodes".format(num_episodes))
+                    e = self._ttt.run(num_episodes=num_episodes, simple_stats=True)
+                except Exception as e:
+                    self._trace.log().info(self._RUN_FAIL.format(str(e)))
+        else:
+            self._trace.log().info("Use commands [x] and [o] to create agents before <play>")
         return self._prompt()
 
     def _prompt(self) -> str:
@@ -69,7 +151,13 @@ class Play(PlayNav):
         if self._ready():
             p = "(play)".format(self._ttt.get_current_agent().name())
         else:
-            p = "(Use [X] and [O] to create agents to play"
+            o = ""
+            x = ""
+            if self._o_agent is None:
+                o = " [O]"
+            if self._x_agent is None:
+                x = " [X]"
+            p = "(Use{}{} to create agents to play)".format(x, o)
         return p
 
     @staticmethod
