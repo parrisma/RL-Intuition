@@ -1,5 +1,5 @@
 import cmd
-from src.tictactoe.interface.gamenav import GameNav
+from src.tictactoe.experiment1.gamenav import GameNav
 
 
 class GameNavCmd(cmd.Cmd):

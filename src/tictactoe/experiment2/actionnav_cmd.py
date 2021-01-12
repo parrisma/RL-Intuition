@@ -1,5 +1,5 @@
 import cmd
-from src.tictactoe.interface.actionnav import ActionNav
+from src.tictactoe.experiment2.actionnav import ActionNav
 
 
 class ActionNavCmd(cmd.Cmd):

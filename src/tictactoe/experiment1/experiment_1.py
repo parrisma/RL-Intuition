@@ -1,7 +1,7 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
-from src.tictactoe.game.game_nav_ttt import TTTGameNav
-from src.tictactoe.experiment1.game_nav_cmd import GameNavCmd
+from src.tictactoe.experiment1.ttt_nav import TTTNav
+from src.tictactoe.experiment1.gamenav_cmd import GameNavCmd
 
 
 class Experiment1(ExperimentBase):
@@ -25,11 +25,11 @@ class Experiment1(ExperimentBase):
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
         GameNavCmd(nav=
-                   TTTGameNav(ttt=self._ttt,
-                              ttt_event_stream=self._ttt_event_stream,
-                              trace=self._trace,
-                              session_uuid=self._session_uuid,
-                              dir_to_use="..\data")).cmdloop()
+                   TTTNav(ttt=self._ttt,
+                          ttt_event_stream=self._ttt_event_stream,
+                          trace=self._trace,
+                          session_uuid=self._session_uuid,
+                          dir_to_use="..\data")).cmdloop()
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 

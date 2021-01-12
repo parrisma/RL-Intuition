@@ -1,8 +1,8 @@
-from typing import Dict, Optional
+from typing import Dict
 import networkx as nx
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
-from src.tictactoe.interface.statenav import StateNav
+from src.tictactoe.experiment0.statenav import StateNav
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.explore.explore import Explore

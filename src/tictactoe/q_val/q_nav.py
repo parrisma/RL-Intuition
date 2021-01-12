@@ -1,6 +1,6 @@
 from typing import Dict, List
 import numpy as np
-from src.tictactoe.interface.actionnav import ActionNav
+from src.tictactoe.experiment2.actionnav import ActionNav
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream

@@ -2,7 +2,7 @@ import logging
 from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.random_play_agent import RandomPlayAgent
 from src.tictactoe.explore.explore_nav import ExploreNav
-from src.tictactoe.experiment0.state_nav_cmd import StateNavCmd
+from src.tictactoe.experiment0.statenav_cmd import StateNavCmd
 
 
 class Experiment0(ExperimentBase):

@@ -1,4 +1,4 @@
-from src.tictactoe.interface.playnav import PlayNav
+from src.tictactoe.experiment3.playnav import PlayNav
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream

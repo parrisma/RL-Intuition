@@ -1,4 +1,4 @@
-from src.tictactoe.interface.actionnav import ActionNav
+from src.tictactoe.experiment2.actionnav import ActionNav
 from src.lib.rltrace.trace import Trace
 
 

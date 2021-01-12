@@ -1,5 +1,5 @@
 import cmd
-from src.tictactoe.interface.statenav import StateNav
+from src.tictactoe.experiment0.statenav import StateNav
 
 
 class StateNavCmd(cmd.Cmd):
