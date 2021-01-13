@@ -71,8 +71,7 @@ class QValsJson:
         q_vals = None
         try:
             fp = open(filename, "r")
-            q_vals = json.load(fp=fp,
-                               allow_nan=True)
+            q_vals = json.load(fp=fp)
         except Exception as e:
             raise UserWarning("Failed to load Q Values from file [{}] with error [{}]".format(
                 filename,

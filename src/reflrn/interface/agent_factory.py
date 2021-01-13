@@ -8,7 +8,7 @@ class AgentFactory(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def new_x_agent(self) -> Agent:
+    def new_x_agent(self, *args, **kwargs) -> Agent:
         """
         Create a new X Agent
         :return: An agent to play as X
@@ -16,7 +16,7 @@ class AgentFactory(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def new_o_agent(self) -> Agent:
+    def new_o_agent(self, *args, **kwargs) -> Agent:
         """
         Create a new O Agent
         :return: An agent to play as O

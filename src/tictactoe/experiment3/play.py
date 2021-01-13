@@ -1,9 +1,11 @@
+from typing import Tuple
 from enum import Enum, unique
 from src.tictactoe.experiment3.playnav import PlayNav
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.random_play_agent import RandomPlayAgent
+from src.tictactoe.agent.random_play_agent import RandomPlayAgent
+from src.tictactoe.agent.q_play_agent import QPlayAgent
 
 
 class Play(PlayNav):
@@ -17,7 +19,8 @@ class Play(PlayNav):
 
     _FUNC = 0
     _DESC = 1
-    _AGENT_TYPES = {"R": ["_random_agent", "Random Agent"]}
+    _AGENT_TYPES = {"R": ["_random_agent", "Random Agent"],
+                    "Q": ["_q_agent", "Q Agent"]}
 
     _RUN_FMT = "command is <play num_episodes>"
     _RUN_FAIL = "command <play> failed with error [{}]"
@@ -80,8 +83,12 @@ class Play(PlayNav):
         if args is not None:
             data_type = args[0].upper()
             if data_type in self._AGENT_TYPES:
-                # lookup & call the agent create function
-                getattr(self, self._AGENT_TYPES[data_type][self._FUNC])(player, arg)
+                try:
+                    # lookup & call the agent create function
+                    getattr(self, self._AGENT_TYPES[data_type][self._FUNC])(player, args[1:])
+                except Exception as e:
+                    self._trace.log().info(str(e))
+                    self._trace.log().info("Agent not created for player [{}]".format(str(player)))
             else:
                 self._trace.log().info("You must specify a valid agent type from {}".format(self._agent_type_help()))
         else:
@@ -90,10 +97,11 @@ class Play(PlayNav):
 
     def _random_agent(self,
                       player: Player,
-                      _) -> None:
+                      _: Tuple) -> None:
         """
         Create an agent that selects plays at random
         :param player: The Player to create the random agent for.
+        :param _: Requires no parameters to construct a random agent
         :return: A random play Agent
         """
         if player == self.Player.player_o:
@@ -102,6 +110,34 @@ class Play(PlayNav):
         else:
             self._x_agent = RandomPlayAgent.RandomAgentFactory().new_x_agent()
             self._trace.log().info("Agent X created as Random Agent")
+        return
+
+    def _q_agent(self,
+                 player: Player,
+                 args: Tuple) -> None:
+        """
+        Create an agent that selects plays based on greedy action defined by q learning
+        :param player: The Player to create the Q agent for.
+        :param args: Expect first argument in Tuple to be a Q Value JSON filename available in current data path
+        :return: A Q Agent
+        """
+        if args is not None and len(args) >= 1:
+            try:
+                q_file = "{}\\{}".format(self._dir_to_use, args[0])
+                if player == self.Player.player_o:
+                    self._o_agent = QPlayAgent.QAgentFactory().new_o_agent(q_file)
+                    self._trace.log().info("Agent O created as Q Agent")
+                else:
+                    self._x_agent = QPlayAgent.QAgentFactory().new_x_agent(q_file)
+                    self._trace.log().info("Agent X created as Q Agent")
+            except Exception as e:
+                self._trace.log().info(str(e))
+                raise UserWarning("Q Agent expects valid JSON file name in dir [{}] but [{}] given".format(
+                    args[0],
+                    self._dir_to_use))
+        else:
+            raise UserWarning("Q Agent expects valid JSON file name in dir [{}] but no filename given".format(
+                self._dir_to_use))
         return
 
     def _agent_type_help(self) -> str:
@@ -161,7 +197,7 @@ class Play(PlayNav):
         return p
 
     @staticmethod
-    def parse(arg):
+    def parse(arg) -> Tuple:
         """
         Convert a series of zero or more numbers to an argument tuple
         """

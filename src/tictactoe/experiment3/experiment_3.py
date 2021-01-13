@@ -1,5 +1,5 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
-from src.tictactoe.random_play_agent import RandomPlayAgent
+from src.tictactoe.agent.random_play_agent import RandomPlayAgent
 from src.tictactoe.experiment3.play_nav_cmd import PlayNavCmd
 from src.tictactoe.experiment3.play import Play
 
