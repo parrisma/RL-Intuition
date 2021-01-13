@@ -90,4 +90,5 @@ class StateNavCmd(cmd.Cmd):
 
     def do_bye(self, arg):
         """End navigation session"""
-        return True
+        quit(0)
+        return

@@ -33,3 +33,8 @@ class PlayNavCmd(cmd.Cmd):
         """Play X and O against each other"""
         self.prompt = PlayNav.Action.play.do(self._nav, arg)
         return
+
+    def do_bye(self, arg):
+        """Terminate the session"""
+        self.prompt = PlayNav.Action.bye.do(self._nav, arg)
+        return

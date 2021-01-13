@@ -114,4 +114,4 @@ class ActionNavCmd(cmd.Cmd):
     @staticmethod
     def do_bye(self, arg):
         """End navigation session"""
-        quit()
+        quit(0)

@@ -6,6 +6,7 @@ from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.agent.random_play_agent import RandomPlayAgent
 from src.tictactoe.agent.q_play_agent import QPlayAgent
+from src.tictactoe.agent.human_agent import HumanAgent
 
 
 class Play(PlayNav):
@@ -20,7 +21,8 @@ class Play(PlayNav):
     _FUNC = 0
     _DESC = 1
     _AGENT_TYPES = {"R": ["_random_agent", "Random Agent"],
-                    "Q": ["_q_agent", "Q Agent"]}
+                    "Q": ["_q_agent", "Q Agent"],
+                    "H": ["_human_agent", "Human Agent"]}
 
     _RUN_FMT = "command is <play num_episodes>"
     _RUN_FAIL = "command <play> failed with error [{}]"
@@ -49,6 +51,13 @@ class Play(PlayNav):
         :return: True if both agents are created and ready to play
         """
         return self._x_agent is not None and self._o_agent is not None
+
+    def do_bye(self) -> None:
+        """
+        Terminate the session
+        """
+        quit(0)
+        return
 
     def do_x(self,
              arg) -> str:
@@ -110,6 +119,23 @@ class Play(PlayNav):
         else:
             self._x_agent = RandomPlayAgent.RandomAgentFactory().new_x_agent()
             self._trace.log().info("Agent X created as Random Agent")
+        return
+
+    def _human_agent(self,
+                     player: Player,
+                     _: Tuple) -> None:
+        """
+        Create an agent that allows user to input actions
+        :param player: The Player to create the human agent for.
+        :param _: Requires no parameters to construct a human agent
+        :return: A Human Agent
+        """
+        if player == self.Player.player_o:
+            self._o_agent = HumanAgent.HumanAgentFactory().new_o_agent()
+            self._trace.log().info("Agent O created as Human Agent")
+        else:
+            self._x_agent = HumanAgent.HumanAgentFactory().new_x_agent()
+            self._trace.log().info("Agent X created as Human Agent")
         return
 
     def _q_agent(self,

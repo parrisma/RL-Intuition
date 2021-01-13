@@ -12,12 +12,14 @@ class PlayNav(metaclass=abc.ABCMeta):
         cmd_hist = "x"
         cmd_show = "o"
         cmd_dump = "play"
+        cmd_bye = "bye"
 
     @unique
     class Action(IntEnum):
         x = 0
         o = 1
         play = 2
+        bye = 3
 
         def __init__(self,
                      action: int):
@@ -34,6 +36,8 @@ class PlayNav(metaclass=abc.ABCMeta):
                 return nav.do_o(args)
             if self.value == PlayNav.Action.play:
                 return nav.do_play(args)
+            if self.value == PlayNav.Action.bye:
+                return nav.do_bye()
             return
 
     @abc.abstractmethod
@@ -64,4 +68,9 @@ class PlayNav(metaclass=abc.ABCMeta):
         :param args: The parameters that describe the games to play between X and O
         :return: The Nav prompt as string
         """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_bye(self) -> None:
+        """Terminate the command session"""
         raise NotImplementedError()
