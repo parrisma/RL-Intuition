@@ -1,3 +1,5 @@
+import os
+import glob
 from typing import Tuple
 from enum import Enum, unique
 from src.tictactoe.experiment3.playnav import PlayNav
@@ -19,13 +21,17 @@ class Play(PlayNav):
     _dir_to_use: str
 
     _FUNC = 0
-    _DESC = 1
+    _ADESC = 1
     _AGENT_TYPES = {"R": ["_random_agent", "Random Agent"],
                     "Q": ["_q_agent", "Q Agent"],
                     "H": ["_human_agent", "Human Agent"]}
 
     _RUN_FMT = "command is <play num_episodes>"
     _RUN_FAIL = "command <play> failed with error [{}]"
+
+    _PATT = 0
+    _FDESC = 1
+    _DATA_TYPES = {"Q": ["q_vals_*.json", "Q Values as JSON"]}
 
     @unique
     class Player(Enum):
@@ -37,7 +43,7 @@ class Play(PlayNav):
                  ttt_event_stream: TicTacToeEventStream,
                  trace: Trace,
                  dir_to_use: str):
-        self._dir_to_use = dir_to_use
+        self._dir_to_use = os.path.abspath(dir_to_use)
         self._trace = trace
         self._ttt_event_stream = ttt_event_stream
         self._ttt = ttt
@@ -173,8 +179,44 @@ class Play(PlayNav):
         """
         agent_help = ""
         for k, v in self._AGENT_TYPES.items():
-            agent_help = "{}, {} - {}".format(agent_help, k, v[self._DESC])
+            agent_help = "{}, {} - {}".format(agent_help, k, v[self._ADESC])
         return agent_help
+
+    def do_list(self,
+                arg) -> str:
+        """
+        List the data types that can be loaded from local file system to create different types of agent
+        :param arg: data type to list
+        :return: The updated command prompt
+        """
+        args = self.parse(arg)
+        if args is not None and len(args) > 0:
+            data_type = args[0].upper()
+            if data_type in self._DATA_TYPES:
+                self._trace.log().info("Searching for data files in [{}]".format(self._dir_to_use))
+                file_pattern = "{}\\{}".format(self._dir_to_use, self._DATA_TYPES[data_type][self._PATT])
+                file_list = glob.glob(file_pattern)
+                if file_list is None or len(file_list) == 0:
+                    self._trace.log().info(
+                        "No matching files found for type [{}]".format(self._DATA_TYPES[data_type][self._PATT]))
+                else:
+                    for f in file_list:
+                        self._trace.log().info(os.path.split(f)[-1])
+            else:
+                self._trace.log().info("You must specify a valid list type from {}".format(self._list_type_help()))
+        else:
+            self._trace.log().info("You must specify a valid list type from {}".format(self._list_type_help()))
+        return self._prompt()
+
+    def _list_type_help(self) -> str:
+        """
+        Help string listing the supported data types to list / load
+        :return: List of valid agent types
+        """
+        data_help = ""
+        for k, v in self._DATA_TYPES.items():
+            data_help = "{}, {} = {}".format(data_help, k, v[self._FDESC])
+        return data_help
 
     def do_play(self,
                 arg) -> str:

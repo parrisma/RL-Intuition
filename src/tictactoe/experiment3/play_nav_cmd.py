@@ -38,3 +38,8 @@ class PlayNavCmd(cmd.Cmd):
         """Terminate the session"""
         self.prompt = PlayNav.Action.bye.do(self._nav, arg)
         return
+
+    def do_list(self, arg):
+        """List the data types that can be loaded into different agents"""
+        self.prompt = PlayNav.Action.list.do(self._nav, arg)
+        return

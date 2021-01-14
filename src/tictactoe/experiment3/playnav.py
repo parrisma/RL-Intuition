@@ -13,6 +13,7 @@ class PlayNav(metaclass=abc.ABCMeta):
         cmd_show = "o"
         cmd_dump = "play"
         cmd_bye = "bye"
+        cmd_list = "list"
 
     @unique
     class Action(IntEnum):
@@ -20,6 +21,7 @@ class PlayNav(metaclass=abc.ABCMeta):
         o = 1
         play = 2
         bye = 3
+        list = 4
 
         def __init__(self,
                      action: int):
@@ -38,6 +40,8 @@ class PlayNav(metaclass=abc.ABCMeta):
                 return nav.do_play(args)
             if self.value == PlayNav.Action.bye:
                 return nav.do_bye()
+            if self.value == PlayNav.Action.list:
+                return nav.do_list(args)
             return
 
     @abc.abstractmethod
@@ -66,6 +70,16 @@ class PlayNav(metaclass=abc.ABCMeta):
         """
         Play games between X and O as described by the given parameters
         :param args: The parameters that describe the games to play between X and O
+        :return: The Nav prompt as string
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_list(self,
+                args) -> str:
+        """
+        List the types of data that can be used to create Agents e.g. Q Values as JSON
+        :param args: Which type of data to list
         :return: The Nav prompt as string
         """
         raise NotImplementedError()
