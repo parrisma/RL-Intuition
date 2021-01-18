@@ -1,6 +1,6 @@
 from typing import Dict, List
 import numpy as np
-from src.tictactoe.experiment2.actionnav import ActionNav
+from src.tictactoe.experiment2.ex2_cmd import Ex2Cmd
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
@@ -9,7 +9,7 @@ from src.tictactoe.q_val.q_vals_json import QValsJson
 from src.tictactoe.explore.explore import Explore
 
 
-class QNav(ActionNav):
+class Ex2CmdDo(Ex2Cmd):
     """
     Navigate a dictionary of Q-Values. The given action moves from current state to the state resulting from
     the action.
@@ -33,7 +33,8 @@ class QNav(ActionNav):
     _B = '-'
     _FUNC = 0
     _DESC = 1
-    _DUMP_TYPES = {"Q": ["_dump_q_values", "Q Values"]}
+    _DUMP_TYPES = {"Q": ["_dump_q_values", "Q Values"],
+                   "C": ["_dump_convergence", "Q Convergence summary"]}
 
     def __init__(self,
                  ttt: TicTacToe,
@@ -377,8 +378,22 @@ class QNav(ActionNav):
         """
         try:
             filename = "{}\\q_vals_{}.json".format(self._dir_to_use, self._uuid)
-            QValsJson.save_q_values_as_json(q_vals=self._q_calc.q_vals_as_simple(), filename=filename)
+            QValsJson.save_values_as_json(vals=self._q_calc.q_vals_as_simple(), filename=filename)
             self._trace.log().info("Q Values saved as JSON to [{}]".format(filename))
+        except Exception as e:
+            self._trace.log().info(str(e))
+        return
+
+    def _dump_convergence(self):
+        """
+        Dump Q Value history summary at each level
+        :return:
+        """
+        try:
+            filename = "{}\\q_conv_{}.json".format(self._dir_to_use, self._uuid)
+            QValsJson.save_values_as_json(vals=self._q_calc.q_convergence_by_level()
+                                          , filename=filename)
+            self._trace.log().info("Convergence Values saved as JSON to [{}]".format(filename))
         except Exception as e:
             self._trace.log().info(str(e))
         return

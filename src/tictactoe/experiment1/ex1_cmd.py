@@ -2,20 +2,20 @@ import abc
 from enum import Enum, IntEnum, unique
 
 
-class GameNav(metaclass=abc.ABCMeta):
+class Ex1Cmd(metaclass=abc.ABCMeta):
     """
     A Navigation Interface for classes that support navigation of TicTacToe game play
     """
 
     @unique
-    class GameCmd(Enum):
+    class Ex1Commands(Enum):
         cmd_run = "run"
         cmd_list = "list"
         cmd_head = "head"
         cmd_set = "set"
 
     @unique
-    class Action(IntEnum):
+    class Ex1Actions(IntEnum):
         run = -1
         list = -2
         head = -3
@@ -28,13 +28,13 @@ class GameNav(metaclass=abc.ABCMeta):
             return
 
         def do(self,
-               nav: 'GameNav',
+               nav: 'Ex1Cmd',
                args=None):
-            if self.value == GameNav.Action.run:
+            if self.value == Ex1Cmd.Ex1Actions.run:
                 return nav.do_run(args)
-            if self.value == GameNav.Action.set:
+            if self.value == Ex1Cmd.Ex1Actions.set:
                 return nav.do_set(args)
-            if self.value == GameNav.Action.head:
+            if self.value == Ex1Cmd.Ex1Actions.head:
                 return nav.do_head(args)
             return nav.do_list()
 

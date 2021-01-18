@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import networkx as nx
 from typing import Dict, List, Callable, Tuple
@@ -48,12 +49,21 @@ class QCalc:
     _optimal_funcs: List[Callable[[str, str, str, Dict], np.float]]
     _players: Dict[str, Player]
 
-    NAIVE_MAX = 0
-    ONE_STEP_MAX = 1
+    NAIVE_OPTIMAL = 0
+    OPTIMAL = 1
 
     END_STATE = "End"
 
     HIST_FMT = "{}:{}={}"
+
+    # Q History element indexes
+    QH_NEXT_STATE = 0
+    QH_ACTION = 1
+    QH_REWARD = 2
+    QH_NS_MAX = 3
+    QH_OLD_Q = 4
+    QH_UPDATE = 5
+    QH_NEW_Q = 6
 
     def __init__(self,
                  trace: Trace,
@@ -79,9 +89,9 @@ class QCalc:
                               x=agent_factory.new_x_agent(),
                               o=agent_factory.new_o_agent())
 
-        self._optimal_funcs = [self._naive_max,  # NAIVE_MAX
-                               self._one_step_max]  # ONE_STEP_MAX
-        self._optimal_func_idx = self.ONE_STEP_MAX
+        self._optimal_funcs = [self._naive_optimal,
+                               self._optimal]
+        self._optimal_func_idx = self.OPTIMAL
 
         self._players = dict()
 
@@ -135,11 +145,11 @@ class QCalc:
         self._players[player].q_values[agent][state].q_vals = q_values
         return
 
-    def _one_step_max(self,
-                      player: str,
-                      agent: str,
-                      next_state: str,
-                      **kwargs) -> np.float:
+    def _optimal(self,
+                 player: str,
+                 agent: str,
+                 next_state: str,
+                 **kwargs) -> np.float:
         """
         The optimal action is to maximise the gain or minimise the loss. So if the absolute loss is greater
         than the gain return the loss else the gain.
@@ -148,7 +158,7 @@ class QCalc:
         :param agent: The agent to get the max for
         :param next_state: The state to estimate the max for
         :param kwargs: Optional arguments
-        :return: The estimated max reward from the next_state + all (known) states at step + 1
+        :return: The estimated optimal reward from the next_state
         """
         os_max = np.nan
         if not next_state == self.END_STATE and next_state is not None:
@@ -160,11 +170,11 @@ class QCalc:
                     os_max = os_min
         return os_max
 
-    def _naive_max(self,
-                   player: str,
-                   agent: str,
-                   next_state: str,
-                   **kwargs) -> np.float:
+    def _naive_optimal(self,
+                       player: str,
+                       agent: str,
+                       next_state: str,
+                       **kwargs) -> np.float:
         """
         Estimate the max reward available from the next state by simply taking the max Q-Val from the
         next state.
@@ -173,8 +183,12 @@ class QCalc:
         :param next_state: The next state to inspect
         :return: The max (estimated) reward available at the next state for the given agent
         """
-        n_max = np.nan
-        return n_max
+        os_max = np.nan
+        if not next_state == self.END_STATE and next_state is not None:
+            qv = self._get_state_q_values(player, agent, next_state)
+            if not np.isnan(qv).all():
+                os_max = np.nanmax(qv)
+        return os_max
 
     def _init_hist(self,
                    player: str,
@@ -276,23 +290,23 @@ class QCalc:
         for player, view in perspectives:
             # Each player updates q from both perspectives
             for a, r in view:
-                self._update_q_for_single_perspective(player=player,
-                                                      state=state,
-                                                      next_state=next_state,
-                                                      action=action,
-                                                      agent=a,
-                                                      reward=r,
-                                                      max_func=max_func)
+                self._update_player_q_for_agent_perspective(player=player,
+                                                            state=state,
+                                                            next_state=next_state,
+                                                            action=action,
+                                                            agent=a,
+                                                            reward=r,
+                                                            max_func=max_func)
         return
 
-    def _update_q_for_single_perspective(self,
-                                         player: str,
-                                         state: str,
-                                         next_state: str,
-                                         action: int,
-                                         agent: str,
-                                         reward: float,
-                                         max_func: Callable[[str, str, str, Dict], np.float]) -> None:
+    def _update_player_q_for_agent_perspective(self,
+                                               player: str,
+                                               state: str,
+                                               next_state: str,
+                                               action: int,
+                                               agent: str,
+                                               reward: float,
+                                               max_func: Callable[[str, str, str, Dict], np.float]) -> None:
         """
         Update internal Q Values with the given State/Action/Reward update for the given agent
 
@@ -386,7 +400,6 @@ class QCalc:
             self._trace.log().info("Done Q Value Calc")
         else:
             self._trace.log().error("No TicTacToe event data for session [{}]".format(self._session_uuid))
-        x = self.q_vals_as_simple()
         return self._players
 
     def get_visits(self) -> Dict[str, int]:
@@ -425,6 +438,56 @@ class QCalc:
                     simple[k1][k2][k3] = v3.q_vals.tolist()
 
         return simple
+
+    def q_convergence_by_level(self) -> List[List[float]]:
+        """
+        Return the averaged Q Value history by level
+        :return: A list with an entry for every level present with the average history for that level.
+        """
+        level_buckets = dict()
+        level_min_size = dict()
+        for player in [self._ttt.x_agent_name(), self._ttt.o_agent_name()]:
+            for state, q_val_hist in self._players[player].q_hist[player].items():
+                state = state[0: state.find(":")]
+                level = state.count("1")
+                if level not in level_buckets:
+                    level_buckets[level] = list()
+                    level_min_size[level] = list()
+                level_buckets[level].append(q_val_hist)
+                level_min_size[level].append(len(q_val_hist))
+
+        for level in level_min_size:
+            szs = np.array(level_min_size[level])
+            cutoff = max(0, int(szs.mean() - (szs.std() * 2)))
+            level_min_size[level] = cutoff
+
+        for level in level_min_size:
+            cropped = list()
+            for hst in level_buckets[level]:
+                if len(hst) >= max(level_min_size[level], 10):
+                    cropped.append(hst)
+            level_buckets[level] = cropped
+
+        res = list()
+        avg = None
+        for level in range(0, 9):
+            if level in level_buckets and len(level_buckets[level]) > 0:
+                sz = level_min_size[level]
+                avg = np.zeros(sz)
+                i = 0
+                for q_hist in level_buckets[level]:
+                    for hst in q_hist:
+                        if i < sz:
+                            avg[i] += np.abs(np.nan_to_num(hst[self.QH_NEW_Q]))  # 6th element is updated q val
+                        i += 1
+                    i = 0
+                avg /= len(level_buckets[level])
+                res.append(avg.tolist())
+            else:
+                self._trace.log().info(
+                    "Level [{}] has insufficient history for meaningful convergence analysis".format(level))
+                res.append(np.nan)
+        return res
 
     @staticmethod
     def zero_if_nan(v: float) -> float:

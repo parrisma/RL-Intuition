@@ -83,6 +83,14 @@ class ExperimentBase(Experiment):
         parser.add_argument("--debug_level", help="The debug level to use debug, info, warn, error", default=None)
         return parser.parse_args()
 
+    @property
+    def dir_to_use(self) -> str:
+        """
+        Local directory to use for data files and local persistence
+        :return: The path of local directory to use.
+        """
+        return "..\\data"
+
     def run(self) -> None:
         """
         Run the experiment

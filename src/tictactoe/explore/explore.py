@@ -189,12 +189,10 @@ class Explore:
         return analysis
 
     def record_visit(self,
-                     state: str,
-                     curr_state_is_episode_end: bool) -> None:
+                     state: str) -> None:
         """
         Add the state to the list of all discovered state
         :param state: The state to add
-        :param curr_state_is_episode_end: True if the current state is a terminal state (Win/Draw) else False
         """
         if state not in self._visited:
             self._visited[state] = 0
@@ -237,7 +235,7 @@ class Explore:
                step: int,
                curr_state_is_episode_end: bool) -> None:
         """
-        Record the discovery of a new game state
+        Record the game state
         :param prev_state: The previous game state as string
         :param curr_state: The current game state as string
         :param step: The step in the episode
@@ -247,7 +245,7 @@ class Explore:
                                 format(self._ttt.state().state_as_visualisation(),
                                        step,
                                        len(self._visited)))
-        self.record_visit(curr_state, curr_state_is_episode_end)
+        self.record_visit(curr_state)
         if prev_state is not None and curr_state != prev_state:
             self.record_network(prev_state, curr_state, curr_state_is_episode_end)
         return
@@ -323,7 +321,7 @@ class Explore:
 
     def get_visited(self) -> Dict[str, int]:
         """
-        Get the dict of visted states
-        :return: Dictionary of visted states and associated visit count
+        Get the dict of visited states
+        :return: Dictionary of visited states and associated visit count
         """
         return self._visited

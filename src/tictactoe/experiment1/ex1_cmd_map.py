@@ -1,18 +1,19 @@
+import sys
 import cmd
-from src.tictactoe.experiment1.gamenav import GameNav
+from src.tictactoe.experiment1.ex1_cmd import Ex1Cmd
 
 
-class GameNavCmd(cmd.Cmd):
+class Ex1CmdMap(cmd.Cmd):
     """
     Run TTT Games
     """
     intro = 'Welcome. Type help or ? to list commands.\n'
     prompt = '(nav) '
 
-    _nav: GameNav
+    _nav: Ex1Cmd
 
     def __init__(self,
-                 nav: GameNav):
+                 nav: Ex1Cmd):
         super().__init__()
         self._nav = nav
         self.intro = "\n\n\nType help for all commands or use [list] to see session id's you can then [explore]"
@@ -20,25 +21,25 @@ class GameNavCmd(cmd.Cmd):
 
     def do_run(self, arg):
         """Run the given number of TT Games"""
-        GameNav.Action.run.do(self._nav, args=arg)
+        Ex1Cmd.Ex1Actions.run.do(self._nav, args=arg)
         return
 
     def do_list(self, arg):
         """Run the given number of TT Games"""
-        GameNav.Action.list.do(self._nav)
+        Ex1Cmd.Ex1Actions.list.do(self._nav)
         return
 
     def do_head(self, arg):
         """Show 10 events for the given session_uuid"""
-        GameNav.Action.head.do(self._nav, args=arg)
+        Ex1Cmd.Ex1Actions.head.do(self._nav, args=arg)
         return
 
     def do_set(self, arg):
         """Run a set piece game of specific moves"""
-        GameNav.Action.set.do(self._nav, args=arg)
+        Ex1Cmd.Ex1Actions.set.do(self._nav, args=arg)
         return
 
     def do_bye(self, arg):
         """End navigation session"""
-        quit(0)
+        sys.exit(0)
         return

@@ -1,14 +1,15 @@
+import sys
 from typing import Dict
 import networkx as nx
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
-from src.tictactoe.experiment0.statenav import StateNav
+from src.tictactoe.experiment0.ex0_cmd import Ex0Cmd
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.explore.explore import Explore
 
 
-class ExploreNav(StateNav):
+class Ex0CmdDo(Ex0Cmd):
     """
     Create a list of all possible game state and a graph of game states and allow exploration
     """
@@ -42,18 +43,18 @@ class ExploreNav(StateNav):
         self._explore = Explore(ttt=self._ttt,
                                 trace=self._trace,
                                 ttt_event_stream=self._ttt_event_stream)
-        self._visits = None
-        self._visit_summary = None
-        self._graph = None
+        self._visits = None  # noqa
+        self._visit_summary = None  # noqa
+        self._graph = None  # noqa
         return
 
     def _reset(self) -> None:
         """
         Return class to intial state
         """
-        self._visits = None
+        self._visits = None  # noqa
         self._visit_summary = None
-        self._graph = None
+        self._graph = None  # noqa
         return
 
     @staticmethod
@@ -147,27 +148,27 @@ class ExploreNav(StateNav):
         Load a visit or a graph file from YAML so it can be explored
         """
         if args is None or len(args) == 0:
-            self._trace.log().info(self.LOAD_FMT.format(StateNav.ExplorationFile.visit.value,
-                                                        StateNav.ExplorationFile.graph.value))
+            self._trace.log().info(self.LOAD_FMT.format(Ex0Cmd.ExplorationFile.visit.value,
+                                                        Ex0Cmd.ExplorationFile.graph.value))
             return
         parsed_args = self.parse(args)
         if len(parsed_args) != 2:
-            self._trace.log().info(self.LOAD_FMT.format(StateNav.ExplorationFile.visit.value,
-                                                        StateNav.ExplorationFile.graph.value))
+            self._trace.log().info(self.LOAD_FMT.format(Ex0Cmd.ExplorationFile.visit.value,
+                                                        Ex0Cmd.ExplorationFile.graph.value))
         else:
-            if parsed_args[0] == StateNav.ExplorationFile.visit.value:
+            if parsed_args[0] == Ex0Cmd.ExplorationFile.visit.value:
                 self._reset()
                 self._visits = self._explore.load_visits_from_yaml(session_uuid=parsed_args[1],
                                                                    dir_to_use=self._dir_to_use)
                 if self._visits is not None and len(self._visits) > 0:
                     self._visit_summary = self._explore.generate_visit_summary(self._visits)
-            elif parsed_args[0] == StateNav.ExplorationFile.graph.value:
+            elif parsed_args[0] == Ex0Cmd.ExplorationFile.graph.value:
                 self._reset()
                 self._graph = self._explore.load_graph_from_yaml(session_uuid=parsed_args[1],
                                                                  dir_to_use=self._dir_to_use)
             else:
-                self._trace.log().info(self.LOAD_FMT.format(StateNav.ExplorationFile.visit.value,
-                                                            StateNav.ExplorationFile.graph.value))
+                self._trace.log().info(self.LOAD_FMT.format(Ex0Cmd.ExplorationFile.visit.value,
+                                                            Ex0Cmd.ExplorationFile.graph.value))
         return
 
     def do_list(self,
@@ -176,22 +177,22 @@ class ExploreNav(StateNav):
         List all matching visit or graph files
         """
         if args is None or len(args) == 0:
-            self._trace.log().info(self.LIST_FMT.format(StateNav.ExplorationFile.visit.value,
-                                                        StateNav.ExplorationFile.graph.value))
+            self._trace.log().info(self.LIST_FMT.format(Ex0Cmd.ExplorationFile.visit.value,
+                                                        Ex0Cmd.ExplorationFile.graph.value))
             return
         parsed_args = self.parse(args)
         if len(parsed_args) != 1:
-            self._trace.log().info(self.LIST_FMT.format(StateNav.ExplorationFile.visit.value,
-                                                        StateNav.ExplorationFile.graph.value))
+            self._trace.log().info(self.LIST_FMT.format(Ex0Cmd.ExplorationFile.visit.value,
+                                                        Ex0Cmd.ExplorationFile.graph.value))
         else:
             files = None
-            if parsed_args[0] == StateNav.ExplorationFile.visit.value:
+            if parsed_args[0] == Ex0Cmd.ExplorationFile.visit.value:
                 files = self._explore.list_visit_files(dir_to_use=self._dir_to_use)
-            elif parsed_args[0] == StateNav.ExplorationFile.graph.value:
+            elif parsed_args[0] == Ex0Cmd.ExplorationFile.graph.value:
                 files = self._explore.list_graph_files(dir_to_use=self._dir_to_use)
             else:
-                self._trace.log().info(self.LIST_FMT.format(StateNav.ExplorationFile.visit.value,
-                                                            StateNav.ExplorationFile.graph.value))
+                self._trace.log().info(self.LIST_FMT.format(Ex0Cmd.ExplorationFile.visit.value,
+                                                            Ex0Cmd.ExplorationFile.graph.value))
             if files is not None:
                 if len(files) > 0:
                     self._trace.log().info(
@@ -226,7 +227,7 @@ class ExploreNav(StateNav):
             self._trace.log().info("Command format <explore all> or <explore random num_games>")
             return
         parsed_args = self.parse(args)
-        if parsed_args[0] == StateNav.Exploration.all.value:
+        if parsed_args[0] == Ex0Cmd.Exploration.all.value:
             self._trace.log().info("Running simulation of every TicTacToe game - takes a while !")
             self._explore.explore_all()
             self._trace.log().info("Done running simulation of game")
@@ -235,7 +236,7 @@ class ExploreNav(StateNav):
             self._trace.log().info("Saved results, use <load visit {}> or <load graph {}> to explore".format(
                 self._session_uuid,
                 self._session_uuid))
-        elif parsed_args[0] == StateNav.Exploration.random.value:
+        elif parsed_args[0] == Ex0Cmd.Exploration.random.value:
             if len(parsed_args) != 2:
                 self._trace.log().info("Command format <explore random num_games>, num games not specified")
             else:
@@ -260,7 +261,7 @@ class ExploreNav(StateNav):
                                            format(str(e)))
         else:
             self._trace.log().info("Command format <explore all> or <explore random num_games>")
-        self.do_load("{} {}".format(StateNav.ExplorationFile.visit.value, explore_session_id))
+        self.do_load("{} {}".format(Ex0Cmd.ExplorationFile.visit.value, explore_session_id))
         self.do_summary()
         return
 
@@ -316,3 +317,10 @@ class ExploreNav(StateNav):
             "{}Level [{}] - State Grand Total [{}]".format(indent, level, tot))
         self.add_to_attr(attrs, level, 'states', transitions)
         return tot
+
+    def do_exit(self,
+                _) -> None:
+        """
+        Terminate the session
+        """
+        sys.exit(0)

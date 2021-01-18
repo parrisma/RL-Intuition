@@ -1,13 +1,13 @@
 import os
 from typing import Tuple, List
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.experiment1.gamenav import GameNav
+from src.tictactoe.experiment1.ex1_cmd import Ex1Cmd
 from src.tictactoe.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.explore.explore import Explore
 
 
-class TTTNav(GameNav):
+class Ex1CmdDo(Ex1Cmd):
     """
     Run TTT Games
     """

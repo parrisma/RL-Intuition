@@ -1,7 +1,7 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.agent.random_play_agent import RandomPlayAgent
-from src.tictactoe.experiment1.ttt_nav import TTTNav
-from src.tictactoe.experiment1.gamenav_cmd import GameNavCmd
+from src.tictactoe.experiment1.ex1_cmd_do import Ex1CmdDo
+from src.tictactoe.experiment1.ex1_cmd_map import Ex1CmdMap
 
 
 class Experiment1(ExperimentBase):
@@ -24,12 +24,12 @@ class Experiment1(ExperimentBase):
         Run the experiment where two random agents play against each other
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        GameNavCmd(nav=
-                   TTTNav(ttt=self._ttt,
-                          ttt_event_stream=self._ttt_event_stream,
-                          trace=self._trace,
-                          session_uuid=self._session_uuid,
-                          dir_to_use="..\data")).cmdloop()
+        Ex1CmdMap(nav=
+                   Ex1CmdDo(ttt=self._ttt,
+                            ttt_event_stream=self._ttt_event_stream,
+                            trace=self._trace,
+                            session_uuid=self._session_uuid,
+                            dir_to_use=self.dir_to_use)).cmdloop()
         self._trace.log().info("Experiment {} Finished".format(self.__class__.__name__))
         return
 

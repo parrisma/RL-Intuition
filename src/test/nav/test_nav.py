@@ -4,8 +4,8 @@ from src.lib.rltrace.trace import Trace
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
 from src.lib.streams.webstream import WebStream
-from src.tictactoe.experiment2.actionnav import ActionNav
-from src.tictactoe.experiment2.actionnav_cmd import ActionNavCmd
+from src.tictactoe.experiment2.ex2_cmd import Ex2Cmd
+from src.tictactoe.experiment2.ex2_cmd_map import Ex2CmdMap
 from src.test.nav.dummy_nav import DummyNav
 
 
@@ -42,22 +42,22 @@ class TestNav(unittest.TestCase):
         return
 
     def test_action_nav(self):
-        test_cases = [[ActionNav.ActionCmd.cmd_0, ActionNav.Action.action_0, None],
-                      [ActionNav.ActionCmd.cmd_1, ActionNav.Action.action_1, None],
-                      [ActionNav.ActionCmd.cmd_2, ActionNav.Action.action_2, None],
-                      [ActionNav.ActionCmd.cmd_3, ActionNav.Action.action_3, None],
-                      [ActionNav.ActionCmd.cmd_4, ActionNav.Action.action_4, None],
-                      [ActionNav.ActionCmd.cmd_5, ActionNav.Action.action_5, None],
-                      [ActionNav.ActionCmd.cmd_6, ActionNav.Action.action_6, None],
-                      [ActionNav.ActionCmd.cmd_7, ActionNav.Action.action_7, None],
-                      [ActionNav.ActionCmd.cmd_8, ActionNav.Action.action_8, None],
-                      [ActionNav.ActionCmd.cmd_9, ActionNav.Action.action_9, None],
-                      [ActionNav.ActionCmd.cmd_back, ActionNav.Action.back, None],
-                      [ActionNav.ActionCmd.cmd_home, ActionNav.Action.home, None],
-                      [ActionNav.ActionCmd.cmd_switch, ActionNav.Action.switch, None],
-                      [ActionNav.ActionCmd.cmd_load, ActionNav.Action.load, "session_uuid"]]
+        test_cases = [[Ex2Cmd.Ex2Commands.cmd_0, Ex2Cmd.Ex2Actions.action_0, None],
+                      [Ex2Cmd.Ex2Commands.cmd_1, Ex2Cmd.Ex2Actions.action_1, None],
+                      [Ex2Cmd.Ex2Commands.cmd_2, Ex2Cmd.Ex2Actions.action_2, None],
+                      [Ex2Cmd.Ex2Commands.cmd_3, Ex2Cmd.Ex2Actions.action_3, None],
+                      [Ex2Cmd.Ex2Commands.cmd_4, Ex2Cmd.Ex2Actions.action_4, None],
+                      [Ex2Cmd.Ex2Commands.cmd_5, Ex2Cmd.Ex2Actions.action_5, None],
+                      [Ex2Cmd.Ex2Commands.cmd_6, Ex2Cmd.Ex2Actions.action_6, None],
+                      [Ex2Cmd.Ex2Commands.cmd_7, Ex2Cmd.Ex2Actions.action_7, None],
+                      [Ex2Cmd.Ex2Commands.cmd_8, Ex2Cmd.Ex2Actions.action_8, None],
+                      [Ex2Cmd.Ex2Commands.cmd_9, Ex2Cmd.Ex2Actions.action_9, None],
+                      [Ex2Cmd.Ex2Commands.cmd_back, Ex2Cmd.Ex2Actions.back, None],
+                      [Ex2Cmd.Ex2Commands.cmd_home, Ex2Cmd.Ex2Actions.home, None],
+                      [Ex2Cmd.Ex2Commands.cmd_switch, Ex2Cmd.Ex2Actions.switch, None],
+                      [Ex2Cmd.Ex2Commands.cmd_load, Ex2Cmd.Ex2Actions.load, "session_uuid"]]
         dummy_nav = DummyNav(trace=self._trace)
-        nav_cmd = ActionNavCmd(dummy_nav)
+        nav_cmd = Ex2CmdMap(dummy_nav)
         for case in test_cases:
             cmd, expected, arg = case
             if arg is not None:

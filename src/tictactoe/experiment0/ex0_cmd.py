@@ -2,13 +2,13 @@ import abc
 from enum import Enum, IntEnum, unique
 
 
-class StateNav(metaclass=abc.ABCMeta):
+class Ex0Cmd(metaclass=abc.ABCMeta):
     """
     A Navigation Interface for classes that support navigation of TicTacToe data structures by state
     """
 
     @unique
-    class StateCmd(Enum):
+    class Ex0Commands(Enum):
         cmd_0 = "0"
         cmd_1 = "1"
         cmd_2 = "2"
@@ -22,6 +22,7 @@ class StateNav(metaclass=abc.ABCMeta):
         cmd_list = "list"
         cmd_summary = "summary"
         cmd_explore = "explore"
+        cmd_exit = "exit"
 
     @unique
     class ExplorationFile(Enum):
@@ -34,7 +35,7 @@ class StateNav(metaclass=abc.ABCMeta):
         random = "random"
 
     @unique
-    class Action(IntEnum):
+    class Ex0Actions(IntEnum):
         level_0 = 0
         level_1 = 1
         level_2 = 2
@@ -49,6 +50,7 @@ class StateNav(metaclass=abc.ABCMeta):
         list = -2
         summary = -3
         explore = -4
+        exit = -5
 
         def __init__(self,
                      action: int):
@@ -57,16 +59,18 @@ class StateNav(metaclass=abc.ABCMeta):
             return
 
         def do(self,
-               nav: 'StateNav',
+               nav: 'Ex0Cmd',
                args=None):
-            if self.value == StateNav.Action.load:
+            if self.value == Ex0Cmd.Ex0Actions.load:
                 return nav.do_load(args)
-            if self.value == StateNav.Action.list:
+            if self.value == Ex0Cmd.Ex0Actions.list:
                 return nav.do_list(args)
-            if self.value == StateNav.Action.summary:
+            if self.value == Ex0Cmd.Ex0Actions.summary:
                 return nav.do_summary()
-            if self.value == StateNav.Action.explore:
+            if self.value == Ex0Cmd.Ex0Actions.explore:
                 return nav.do_explore(args)
+            if self.value == Ex0Cmd.Ex0Actions.exit:
+                return nav.do_exit(args)
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -107,5 +111,13 @@ class StateNav(metaclass=abc.ABCMeta):
         """
         Run a simulation of every TicTacToe game and save as a list of states and as an
         action graph
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_exit(self,
+                args) -> None:
+        """
+        Terminate the session
         """
         raise NotImplementedError()

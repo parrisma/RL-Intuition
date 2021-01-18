@@ -1,8 +1,8 @@
-from src.tictactoe.experiment2.actionnav import ActionNav
+from src.tictactoe.experiment2.ex2_cmd import Ex2Cmd
 from src.lib.rltrace.trace import Trace
 
 
-class DummyNav(ActionNav):
+class DummyNav(Ex2Cmd):
     """
     Dummy Navigation class for testing Nav class.
     """
@@ -23,21 +23,21 @@ class DummyNav(ActionNav):
 
     def do_home(self) -> None:
         self._trace.log().debug("- - - - - - Nav Action {} Invoked action Home")
-        self.last_action = ActionNav.Action.home.value
+        self.last_action = Ex2Cmd.Ex2Actions.home.value
         return
 
     def do_back(self) -> None:
         self._trace.log().debug("- - - - - - Nav Action {} Invoked action Back")
-        self.last_action = ActionNav.Action.back.value
+        self.last_action = Ex2Cmd.Ex2Actions.back.value
         return
 
     def do_load(self,
                 session_uuid: str) -> None:
         self._trace.log().debug("- - - - - - Nav Action {} Invoked action Load")
-        self.last_action = ActionNav.Action.load.value
+        self.last_action = Ex2Cmd.Ex2Actions.load.value
         return
 
     def do_switch(self) -> None:
         self._trace.log().debug("- - - - - - Nav Action {} Invoked action Switch")
-        self.last_action = ActionNav.Action.switch.value
+        self.last_action = Ex2Cmd.Ex2Actions.switch.value
         return

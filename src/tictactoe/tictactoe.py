@@ -14,7 +14,7 @@ from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
 
 
 class TicTacToe(Environment):
-    # There are 8534 legal board states
+    # There are 8534 legal board states (see experiment 0)
     __trace: Trace
     __ttt_event_stream: TicTacToeEventStream
     __session_uuid: str
@@ -188,7 +188,6 @@ class TicTacToe(Environment):
         """
         episodes = list()
         stats = np.zeros(3, dtype=np.int)
-        i = 0
         while len(episodes) < num_episodes:
             state, agent, episode_uuid = self.episode_start()
             while not self.episode_complete():
@@ -313,7 +312,10 @@ class TicTacToe(Environment):
                 reward = self.draw_reward
                 episode_outcome = TicTacToeEvent.DRAW
 
+        # Communicate the reward for taking the action to teh Agent
         agent.reward(state, next_state, action, reward, episode_end)
+
+        # Persist the reward in event stream
         self.__ttt_event_stream.record_event(episode_uuid=self.__episode_uuid,
                                              episode_step=self.__episode_step,
                                              state=state,

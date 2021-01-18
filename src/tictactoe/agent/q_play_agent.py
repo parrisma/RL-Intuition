@@ -55,7 +55,7 @@ class QPlayAgent(Agent):
         self._prev_state = None
         self._trace.log().debug("Agent created => {}:{}".format(self._id, self._name))
         try:
-            self._q_values = QValsJson.load_q_values_from_json(filename=filename)
+            self._q_values = QValsJson.load_values_from_json(filename=filename)
         except Exception as e:
             self._q_values = None
             raise  # last exception

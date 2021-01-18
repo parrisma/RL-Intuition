@@ -2,13 +2,13 @@ import abc
 from enum import Enum, IntEnum, unique
 
 
-class ActionNav(metaclass=abc.ABCMeta):
+class Ex2Cmd(metaclass=abc.ABCMeta):
     """
     A Navigation Interface for classes that support navigation of TicTacToe data structures by action
     """
 
     @unique
-    class ActionCmd(Enum):
+    class Ex2Commands(Enum):
         cmd_0 = "0"
         cmd_1 = "1"
         cmd_2 = "2"
@@ -29,7 +29,7 @@ class ActionNav(metaclass=abc.ABCMeta):
         cmd_dump = "dump"
 
     @unique
-    class Action(IntEnum):
+    class Ex2Actions(IntEnum):
         action_0 = 0
         action_1 = 1
         action_2 = 2
@@ -56,23 +56,23 @@ class ActionNav(metaclass=abc.ABCMeta):
             return
 
         def do(self,
-               nav: 'ActionNav',
+               nav: 'Ex2Cmd',
                args=None):
-            if self.value == ActionNav.Action.back:
+            if self.value == Ex2Cmd.Ex2Actions.back:
                 return nav.do_back()
-            if self.value == ActionNav.Action.home:
+            if self.value == Ex2Cmd.Ex2Actions.home:
                 return nav.do_home()
-            if self.value == ActionNav.Action.load:
+            if self.value == Ex2Cmd.Ex2Actions.load:
                 return nav.do_load(args)
-            if self.value == ActionNav.Action.switch:
+            if self.value == Ex2Cmd.Ex2Actions.switch:
                 return nav.do_switch()
-            if self.value == ActionNav.Action.list:
+            if self.value == Ex2Cmd.Ex2Actions.list:
                 return nav.do_list()
-            if self.value == ActionNav.Action.hist:
+            if self.value == Ex2Cmd.Ex2Actions.hist:
                 return nav.do_hist(args)
-            if self.value == ActionNav.Action.show:
+            if self.value == Ex2Cmd.Ex2Actions.show:
                 return nav.do_show()
-            if self.value == ActionNav.Action.dump:
+            if self.value == Ex2Cmd.Ex2Actions.dump:
                 return nav.do_dump(args)
             return nav.do_action(self._action)
 
