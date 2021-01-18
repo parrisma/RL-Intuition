@@ -1,8 +1,9 @@
-from typing import Dict, List
+import sys
 import numpy as np
+from typing import Dict, List
 from src.tictactoe.experiment2.ex2_cmd import Ex2Cmd
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.q_val.q_calc import QCalc
 from src.tictactoe.q_val.q_vals_json import QValsJson
@@ -419,3 +420,10 @@ class Ex2CmdDo(Ex2Cmd):
         else:
             self._trace.log().info("Use the [load <uuid>] command to load and calc one of these session uuid's")
         return self._prompt()
+
+    def do_exit(self,
+                arg) -> None:
+        """
+        Terminate the session
+        """
+        sys.exit(0)

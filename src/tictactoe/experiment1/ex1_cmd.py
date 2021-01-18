@@ -13,6 +13,7 @@ class Ex1Cmd(metaclass=abc.ABCMeta):
         cmd_list = "list"
         cmd_head = "head"
         cmd_set = "set"
+        cmd_exit = "exit"
 
     @unique
     class Ex1Actions(IntEnum):
@@ -20,6 +21,7 @@ class Ex1Cmd(metaclass=abc.ABCMeta):
         list = -2
         head = -3
         set = -4
+        exit = -5
 
         def __init__(self,
                      action: int):
@@ -36,6 +38,8 @@ class Ex1Cmd(metaclass=abc.ABCMeta):
                 return nav.do_set(args)
             if self.value == Ex1Cmd.Ex1Actions.head:
                 return nav.do_head(args)
+            if self.value == Ex1Cmd.Ex1Actions.exit:
+                return nav.do_exit(args)
             return nav.do_list()
 
     @abc.abstractmethod
@@ -66,5 +70,13 @@ class Ex1Cmd(metaclass=abc.ABCMeta):
                 args) -> None:
         """
         Show the first 10 game events for the given session uuid
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_exit(self,
+                args) -> None:
+        """
+        Terminate the session
         """
         raise NotImplementedError()

@@ -1,9 +1,8 @@
-import sys
 import numpy as np
 import networkx as nx
 from typing import Dict, List, Callable, Tuple
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.agent.simulation_agent import SimulationAgent
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream

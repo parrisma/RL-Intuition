@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 from src.lib.envboot.env import Env
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.tictactoe import TicTacToe
-from src.tictactoe.tictactoe_state import TicTacToeState
+from src.tictactoe.ttt.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe_state import TicTacToeState
 from src.test.ttt_test.test_agent import TestAgent
 from src.interface.envbuilder import EnvBuilder
 from src.lib.settings import Settings
@@ -11,7 +11,7 @@ from src.lib.streams.webstream import WebStream
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
 from src.lib.uniqueref import UniqueRef
-from src.tictactoe.tictactoe_state_factory import TicTacToeStateFactory
+from src.tictactoe.ttt.tictactoe_state_factory import TicTacToeStateFactory
 
 
 class TestTicTacToe(unittest.TestCase):

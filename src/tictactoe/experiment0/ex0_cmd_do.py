@@ -4,7 +4,7 @@ import networkx as nx
 from src.lib.rltrace.trace import Trace
 from src.lib.uniqueref import UniqueRef
 from src.tictactoe.experiment0.ex0_cmd import Ex0Cmd
-from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.explore.explore import Explore
 

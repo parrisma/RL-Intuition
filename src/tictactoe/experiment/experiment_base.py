@@ -9,9 +9,9 @@ from src.lib.envboot.log_level import LogLevel
 from src.reflrn.interface.experiment import Experiment
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.agent_factory import AgentFactory
-from src.tictactoe.tictactoe_state_factory import TicTacToeStateFactory
+from src.tictactoe.ttt.tictactoe_state_factory import TicTacToeStateFactory
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe import TicTacToe
 
 
 class ExperimentBase(Experiment):

@@ -6,8 +6,8 @@ from typing import Dict
 from src.lib.rltrace.trace import Trace
 from src.reflrn.interface.agent import Agent
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.tictactoe import TicTacToe
-from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
+from src.tictactoe.ttt.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe_board_state import TicTacToeBoardState
 
 
 class Explore:

@@ -111,7 +111,7 @@ class Ex2CmdMap(cmd.Cmd):
         self.prompt = Ex2Cmd.Ex2Actions.dump.do(self._nav, args=arg)
         return
 
-    @staticmethod
-    def do_bye(self, _):
+    def do_exit(self, arg):
         """End navigation session"""
-        quit(0)
+        Ex2Cmd.Ex2Actions.exit.do(self._nav, args=arg)
+        return

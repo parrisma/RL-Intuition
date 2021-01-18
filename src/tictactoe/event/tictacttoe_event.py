@@ -1,5 +1,5 @@
-from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
-from src.tictactoe.tictactoe_state import TicTacToeState
+from src.tictactoe.ttt.tictactoe_board_state import TicTacToeBoardState
+from src.tictactoe.ttt.tictactoe_state import TicTacToeState
 
 
 class TicTacToeEvent:

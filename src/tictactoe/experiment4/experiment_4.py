@@ -1,12 +1,12 @@
 from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.agent.random_play_agent import RandomPlayAgent
-from src.tictactoe.experiment3.ex3_cmd_map import Ex3CmdMap
-from src.tictactoe.experiment3.ex3_cmd_do import Ex3CmdDo
+from src.tictactoe.experiment4.ex4_cmd_map import Ex4CmdMap
+from src.tictactoe.experiment4.ex4_cmd_do import Ex4CmdDo
 
 
-class Experiment3(ExperimentBase):
+class Experiment4(ExperimentBase):
     """
-    This Experiment is to create different types of X and O AI agents and play them against each other
+    This Experiment is for training of Neural Net Agents
     """
 
     def __init__(self):
@@ -17,10 +17,10 @@ class Experiment3(ExperimentBase):
 
     def run(self) -> None:
         """
-        Allow command lined based creation and interplay of various AI TicTacToe Agents
+        Allow command lined based training of Neural Net Agents
         """
         self._trace.log().info("Experiment {} Started".format(self.__class__.__name__))
-        Ex3CmdMap(Ex3CmdDo(ttt=self._ttt,
+        Ex4CmdMap(Ex4CmdDo(ttt=self._ttt,
                            ttt_event_stream=self._ttt_event_stream,
                            trace=self._trace,
                            dir_to_use=self.dir_to_use)).cmdloop()
@@ -29,4 +29,4 @@ class Experiment3(ExperimentBase):
 
 
 if __name__ == "__main__":
-    Experiment3().run()
+    Experiment4().run()

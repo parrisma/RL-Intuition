@@ -6,11 +6,11 @@ from src.lib.uniqueref import UniqueRef
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.environment import Environment
 from src.reflrn.interface.state import State
-from src.tictactoe.tictactoe_playerid import TicTacToePlayerId
-from src.tictactoe.tictactoe_state import TicTacToeState
+from src.tictactoe.ttt.tictactoe_playerid import TicTacToePlayerId
+from src.tictactoe.ttt.tictactoe_state import TicTacToeState
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.event.tictacttoe_event import TicTacToeEvent
-from src.tictactoe.tictactoe_board_state import TicTacToeBoardState
+from src.tictactoe.ttt.tictactoe_board_state import TicTacToeBoardState
 
 
 class TicTacToe(Environment):

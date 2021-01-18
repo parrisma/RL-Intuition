@@ -1,17 +1,18 @@
+import sys
 import os
 import glob
 from typing import Tuple
 from enum import Enum, unique
-from src.tictactoe.experiment3.playnav import PlayNav
+from src.tictactoe.experiment3.ex3_cmd import Ex3Cmd
 from src.lib.rltrace.trace import Trace
-from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.agent.random_play_agent import RandomPlayAgent
 from src.tictactoe.agent.q_play_agent import QPlayAgent
 from src.tictactoe.agent.human_agent import HumanAgent
 
 
-class Play(PlayNav):
+class Ex3CmdDo(Ex3Cmd):
     """
     All creation of different types of AI Agent and play between them
     """
@@ -58,12 +59,11 @@ class Play(PlayNav):
         """
         return self._x_agent is not None and self._o_agent is not None
 
-    def do_bye(self) -> None:
+    def do_exit(self) -> None:
         """
         Terminate the session
         """
-        quit(0)
-        return
+        sys.exit(0)
 
     def do_x(self,
              arg) -> str:

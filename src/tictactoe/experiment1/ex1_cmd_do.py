@@ -1,8 +1,9 @@
 import os
+import sys
 from typing import Tuple, List
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.experiment1.ex1_cmd import Ex1Cmd
-from src.tictactoe.tictactoe import TicTacToe
+from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.explore.explore import Explore
 
@@ -175,3 +176,10 @@ class Ex1CmdDo(Ex1Cmd):
             except Exception as _:
                 self._trace.log().info(self.HEAD_FMT)
         return
+
+    def do_exit(self,
+                arg) -> None:
+        """
+        Terminate the session
+        """
+        sys.exit(0)

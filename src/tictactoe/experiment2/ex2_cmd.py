@@ -27,6 +27,7 @@ class Ex2Cmd(metaclass=abc.ABCMeta):
         cmd_hist = "hist"
         cmd_show = "show"
         cmd_dump = "dump"
+        cmd_exit = "exit"
 
     @unique
     class Ex2Actions(IntEnum):
@@ -48,6 +49,7 @@ class Ex2Cmd(metaclass=abc.ABCMeta):
         hist = -6
         show = -7
         dump = -8
+        exit = -9
 
         def __init__(self,
                      action: int):
@@ -74,6 +76,8 @@ class Ex2Cmd(metaclass=abc.ABCMeta):
                 return nav.do_show()
             if self.value == Ex2Cmd.Ex2Actions.dump:
                 return nav.do_dump(args)
+            if self.value == Ex2Cmd.Ex2Actions.exit:
+                return nav.do_exit(args)
             return nav.do_action(self._action)
 
     @abc.abstractmethod
@@ -149,5 +153,13 @@ class Ex2Cmd(metaclass=abc.ABCMeta):
         """
         Dump the nominated set of values to local file in JSON format
         :return: The Nav prompt as string
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def do_exit(self,
+                args) -> None:
+        """
+        Terminate the session
         """
         raise NotImplementedError()

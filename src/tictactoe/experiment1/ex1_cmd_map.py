@@ -39,7 +39,7 @@ class Ex1CmdMap(cmd.Cmd):
         Ex1Cmd.Ex1Actions.set.do(self._nav, args=arg)
         return
 
-    def do_bye(self, arg):
+    def do_exit(self, arg):
         """End navigation session"""
-        sys.exit(0)
+        Ex1Cmd.Ex1Actions.exit.do(self._nav, args=arg)
         return

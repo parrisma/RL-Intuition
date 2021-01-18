@@ -2,25 +2,25 @@ import abc
 from enum import Enum, IntEnum, unique
 
 
-class PlayNav(metaclass=abc.ABCMeta):
+class Ex3Cmd(metaclass=abc.ABCMeta):
     """
     A Navigation Interface for classes that support playing TicTacToe with different AI Agents
     """
 
     @unique
-    class PlayCmd(Enum):
+    class Ex3Commands(Enum):
         cmd_hist = "x"
         cmd_show = "o"
         cmd_dump = "play"
-        cmd_bye = "bye"
+        cmd_exit = "exit"
         cmd_list = "list"
 
     @unique
-    class Action(IntEnum):
+    class Ex3Action(IntEnum):
         x = 0
         o = 1
         play = 2
-        bye = 3
+        exit = 3
         list = 4
 
         def __init__(self,
@@ -30,17 +30,17 @@ class PlayNav(metaclass=abc.ABCMeta):
             return
 
         def do(self,
-               nav: 'PlayNav',
+               nav: 'Ex3Cmd',
                args=None):
-            if self.value == PlayNav.Action.x:
+            if self.value == Ex3Cmd.Ex3Action.x:
                 return nav.do_x(args)
-            if self.value == PlayNav.Action.o:
+            if self.value == Ex3Cmd.Ex3Action.o:
                 return nav.do_o(args)
-            if self.value == PlayNav.Action.play:
+            if self.value == Ex3Cmd.Ex3Action.play:
                 return nav.do_play(args)
-            if self.value == PlayNav.Action.bye:
-                return nav.do_bye()
-            if self.value == PlayNav.Action.list:
+            if self.value == Ex3Cmd.Ex3Action.exit:
+                return nav.do_exit()
+            if self.value == Ex3Cmd.Ex3Action.list:
                 return nav.do_list(args)
             return
 
@@ -85,6 +85,6 @@ class PlayNav(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def do_bye(self) -> None:
+    def do_exit(self) -> None:
         """Terminate the command session"""
         raise NotImplementedError()

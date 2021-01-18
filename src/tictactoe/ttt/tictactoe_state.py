@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict
 from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.state import State
-from src.tictactoe.tictactoe_playerid import TicTacToePlayerId
+from src.tictactoe.ttt.tictactoe_playerid import TicTacToePlayerId
 
 
 class TicTacToeState(State):
