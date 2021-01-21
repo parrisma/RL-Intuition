@@ -39,7 +39,7 @@ class Ex1Cmd(metaclass=abc.ABCMeta):
             if self.value == Ex1Cmd.Ex1Actions.head:
                 return nav.do_head(args)
             if self.value == Ex1Cmd.Ex1Actions.exit:
-                return nav.do_exit(args)
+                nav.do_exit(args)
             return nav.do_list()
 
     @abc.abstractmethod

@@ -9,10 +9,12 @@ class Ex4Cmd(metaclass=abc.ABCMeta):
 
     @unique
     class Ex4Commands(Enum):
+        cmd_net = "net"
         cmd_exit = "exit"
 
     @unique
     class Ex4Action(IntEnum):
+        net = 1
         exit = -99
 
         def __init__(self,
@@ -24,9 +26,17 @@ class Ex4Cmd(metaclass=abc.ABCMeta):
         def do(self,
                nav: 'Ex4Cmd',
                args=None):
+            if self.value == Ex4Cmd.Ex4Action.net:
+                return nav.do_net(args=args)
             if self.value == Ex4Cmd.Ex4Action.exit:
-                return nav.do_exit(args=args)
+                nav.do_exit(args=args)
             return
+
+    @abc.abstractmethod
+    def do_net(self,
+               args) -> str:
+        """Create a Neural Network of given type"""
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def do_exit(self,

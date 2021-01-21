@@ -77,7 +77,7 @@ class Ex2Cmd(metaclass=abc.ABCMeta):
             if self.value == Ex2Cmd.Ex2Actions.dump:
                 return nav.do_dump(args)
             if self.value == Ex2Cmd.Ex2Actions.exit:
-                return nav.do_exit(args)
+                nav.do_exit(args)
             return nav.do_action(self._action)
 
     @abc.abstractmethod

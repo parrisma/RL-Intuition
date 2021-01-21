@@ -1,4 +1,5 @@
 import abc
+import numpy as np
 
 
 class NetI(metaclass=abc.ABCMeta):
@@ -17,11 +18,15 @@ class NetI(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def compile(self,
-                *args,
-                **kwargs) -> None:
+    def train(self,
+              x_train: np.ndarray,
+              y_train: np.ndarray,
+              *args,
+              **kwargs) -> None:
         """
-        Compile the Neural Network based on the given arguments.
+        Train the Neural Network based on the given arguments.
+        :param x_train: The X Training data : shape (n,1)
+        :param y_train: The Y Training data : shape (n,1)
         :params args: The arguments to parse for net compile parameters
         """
         raise NotImplementedError()

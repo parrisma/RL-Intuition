@@ -70,7 +70,7 @@ class Ex0Cmd(metaclass=abc.ABCMeta):
             if self.value == Ex0Cmd.Ex0Actions.explore:
                 return nav.do_explore(args)
             if self.value == Ex0Cmd.Ex0Actions.exit:
-                return nav.do_exit(args)
+                nav.do_exit(args)
             return nav.do_action(self._action)
 
     @abc.abstractmethod

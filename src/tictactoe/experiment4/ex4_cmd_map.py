@@ -19,7 +19,12 @@ class Ex4CmdMap(cmd.Cmd):
         self.intro = "\n\n\nType help for all commands"
         return
 
-    def do_exit(self, arg):
+    def do_net(self, arg) -> str:
+        """Build a Neural Network of the given type"""
+        self.prompt = Ex4Cmd.Ex4Action.net.do(self._nav, arg)
+        return self.prompt
+
+    def do_exit(self, arg) -> None:
         """Terminate the session"""
         self.prompt = Ex4Cmd.Ex4Action.exit.do(self._nav, arg)
         return

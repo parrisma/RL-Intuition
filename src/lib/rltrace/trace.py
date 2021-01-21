@@ -18,6 +18,22 @@ class Trace:
                                            datefmt='%Y-%m-%dT%H:%M:%S%z')
     _ELASTIC_FORMATTER = ElasticFormatter()
 
+    class StreamToLogger(object):
+        """
+        File-like stream object that redirects writes to a logger instance.
+        """
+        def __init__(self, logger, level):
+            self.logger = logger
+            self.level = level
+            self.linebuf = ''
+
+        def write(self, buf):
+            for line in buf.rstrip().splitlines():
+                self.logger.log(self.level, line.rstrip())
+
+        def flush(self):
+            pass
+
     def __init__(self,
                  session_uuid: str = None,
                  log_level: LogLevel = LogLevel.new()):
@@ -48,6 +64,8 @@ class Trace:
             log_level.set(self._logger)
             self._logger.propagate = False  # Ensure only added handlers log i.e. disable parent logging handler
             self.enable_console_handler()
+            sys.stdout = self.StreamToLogger(self._logger, logging.INFO)
+            sys.stderr = self.StreamToLogger(self._logger, logging.ERROR)
         return
 
     def enable_console_handler(self) -> None:
@@ -74,6 +92,21 @@ class Trace:
             self._elastic_handler.setLevel(level=self._logger.level)
             self._elastic_handler.setFormatter(Trace._ELASTIC_FORMATTER)
             self._logger.addHandler(self._elastic_handler)
+        return
+
+    def enable_tf_capture(self,
+                          tf_logger: logging.Logger) -> None:
+        """
+        Disable TF logging to console direct and re-direct to experiment trace console & elastic
+        :param tf_logger: The tensorflow logger
+        """
+
+        loggers = [tf_logger]
+        for logger in loggers:
+            logger.handlers = []
+            logger.propagate = False
+            logger.addHandler(self._console_handler)
+            logger.addHandler(self._elastic_handler)
         return
 
     def log(self) -> logging.Logger:

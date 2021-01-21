@@ -6,7 +6,7 @@ from src.reflrn.interface.agent import Agent
 from src.reflrn.interface.agent_factory import AgentFactory
 from src.reflrn.interface.state import State
 from src.tictactoe.explore.explore import Explore
-from src.tictactoe.q_val.q_vals_json import QValsJson
+from src.tictactoe.util.vals_json import ValsJson
 
 
 class QPlayAgent(Agent):
@@ -51,13 +51,13 @@ class QPlayAgent(Agent):
         self._trace = self._env.get_trace()
         self._id = agent_id
         self._name = agent_name
-        self._explore = None
-        self._prev_state = None
+        self._explore = None  # noqa
+        self._prev_state = None  # noqa
         self._trace.log().debug("Agent created => {}:{}".format(self._id, self._name))
         try:
-            self._q_values = QValsJson.load_values_from_json(filename=filename)
+            self._q_values = ValsJson.load_values_from_json(filename=filename)
         except Exception as e:
-            self._q_values = None
+            self._q_values = None  # noqa
             raise  # last exception
         return
 

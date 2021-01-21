@@ -6,7 +6,7 @@ from src.lib.rltrace.trace import Trace
 from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.q_val.q_calc import QCalc
-from src.tictactoe.q_val.q_vals_json import QValsJson
+from src.tictactoe.util.vals_json import ValsJson
 from src.tictactoe.explore.explore import Explore
 
 
@@ -379,7 +379,7 @@ class Ex2CmdDo(Ex2Cmd):
         """
         try:
             filename = "{}\\q_vals_{}.json".format(self._dir_to_use, self._uuid)
-            QValsJson.save_values_as_json(vals=self._q_calc.q_vals_as_simple(), filename=filename)
+            ValsJson.save_values_as_json(vals=self._q_calc.q_vals_as_simple(), filename=filename)
             self._trace.log().info("Q Values saved as JSON to [{}]".format(filename))
         except Exception as e:
             self._trace.log().info(str(e))
@@ -392,8 +392,8 @@ class Ex2CmdDo(Ex2Cmd):
         """
         try:
             filename = "{}\\q_conv_{}.json".format(self._dir_to_use, self._uuid)
-            QValsJson.save_values_as_json(vals=self._q_calc.q_convergence_by_level()
-                                          , filename=filename)
+            ValsJson.save_values_as_json(vals=self._q_calc.q_convergence_by_level()
+                                         , filename=filename)
             self._trace.log().info("Convergence Values saved as JSON to [{}]".format(filename))
         except Exception as e:
             self._trace.log().info(str(e))

@@ -38,10 +38,10 @@ class Ex3Cmd(metaclass=abc.ABCMeta):
                 return nav.do_o(args)
             if self.value == Ex3Cmd.Ex3Action.play:
                 return nav.do_play(args)
-            if self.value == Ex3Cmd.Ex3Action.exit:
-                return nav.do_exit()
             if self.value == Ex3Cmd.Ex3Action.list:
                 return nav.do_list(args)
+            if self.value == Ex3Cmd.Ex3Action.exit:
+                nav.do_exit()
             return
 
     @abc.abstractmethod

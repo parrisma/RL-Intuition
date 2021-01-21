@@ -1,9 +1,9 @@
 import json
 
 
-class QValsJson:
+class ValsJson:
     """
-    Serialise and de-serialise calculated values to/from JSON when passed as simple python data structures
+    Serialise and de-serialise values to/from JSON when passed as simple python data structures
     """
 
     @staticmethod
