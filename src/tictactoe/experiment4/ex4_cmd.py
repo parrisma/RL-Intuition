@@ -1,8 +1,9 @@
 import abc
 from enum import Enum, IntEnum, unique
+from src.tictactoe.experiment.cmd_base import CmdBase
 
 
-class Ex4Cmd(metaclass=abc.ABCMeta):
+class Ex4Cmd(CmdBase):
     """
     A Navigation Interface for training Neural Network Agents
     """
@@ -36,10 +37,4 @@ class Ex4Cmd(metaclass=abc.ABCMeta):
     def do_net(self,
                args) -> str:
         """Create a Neural Network of given type"""
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def do_exit(self,
-                args) -> None:
-        """Terminate the command session"""
         raise NotImplementedError()

@@ -35,6 +35,7 @@ class ExperimentBase(Experiment):
         """
         Establish a connection to the core environment
         """
+        super().__init__()
         args = self._args()
         self._log_level = LogLevel.new(args.debug_level)
         self._env = Env(log_level=self._log_level)
@@ -95,5 +96,5 @@ class ExperimentBase(Experiment):
         """
         Run the experiment
         """
-        super.run()
+        super().run()
         return
