@@ -6,7 +6,7 @@ class Ex4CmdMap(cmd.Cmd):
     """
     Commands to manage training a Neural Net Agent
     """
-    prompt_default = '(setup)'
+    prompt_default = '(net)'
     intro = 'Welcome. Type help or ? to list commands.\n'
     prompt = prompt_default
 
@@ -19,12 +19,29 @@ class Ex4CmdMap(cmd.Cmd):
         self.intro = "\n\n\nType help for all commands"
         return
 
-    def do_net(self, arg) -> str:
+    def do_build(self, arg):
         """Build a Neural Network of the given type"""
-        self.prompt = Ex4Cmd.Ex4Action.net.do(self._nav, arg)
-        return self.prompt
+        self.prompt = Ex4Cmd.Ex4Action.build.do(self._nav, arg)
+        return
 
-    def do_exit(self, arg) -> None:
+    def do_train(self, arg):
+        """Train and Test the Neural Network created by net command"""
+        self.prompt = Ex4Cmd.Ex4Action.train.do(self._nav, arg)
+        return
+
+    def do_list(self, arg):
+        """List data files that match the given pattern"""
+        self.prompt = Ex4Cmd.Ex4Action.list.do(self._nav, arg)
+        return
+
+    def do_predict(self,
+                   arg):
+        """Make a prediction using the currently built and trained Neural Network"""
+        self.prompt = Ex4Cmd.Ex4Action.predict.do(self._nav, arg)
+
+    def do_exit(self, arg):
         """Terminate the session"""
         self.prompt = Ex4Cmd.Ex4Action.exit.do(self._nav, arg)
-        return
+        return True
+
+    do_EOF = do_exit  # Ctrl+D = Exit

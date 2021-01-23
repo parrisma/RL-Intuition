@@ -1,5 +1,5 @@
 import abc
-from typing import Tuple
+from typing import Tuple, Dict
 
 
 class CmdBase(metaclass=abc.ABCMeta):

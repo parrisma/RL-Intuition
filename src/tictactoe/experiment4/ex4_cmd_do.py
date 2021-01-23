@@ -1,14 +1,13 @@
 import sys
 import os
-import numpy as np
-from typing import Tuple
-from sklearn.model_selection import train_test_split
+from typing import Tuple, Dict
 from src.tictactoe.experiment4.ex4_cmd import Ex4Cmd
 from src.tictactoe.experiment.cmd_options import CmdOptions
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
-from src.tictactoe.net.simple_net import SimpleNet
+from src.tictactoe.net.neural_net import NeuralNet
+from src.tictactoe.net.hello_world_net import HelloWorldNet
 
 
 class Ex4CmdDo(Ex4Cmd):
@@ -21,6 +20,7 @@ class Ex4CmdDo(Ex4Cmd):
     _dir_to_use: str
     _last_net: str
     _idx: int
+    _neural_net: NeuralNet
     _net_command_options: CmdOptions
 
     def __init__(self,
@@ -34,47 +34,50 @@ class Ex4CmdDo(Ex4Cmd):
         self._ttt = ttt
         self._last_net = None  # noqa
         self._idx = 0
-        self._net_command_options = CmdOptions(trace)
+        self._neural_net = None  # noqa
+        self._net_command_options = CmdOptions(trace, self._dir_to_use)
         self._net_command_options.add_option(aliases=['H'],
                                              function=self._hello_world,
                                              description="Hello World Network")
+        self._ls_command_options = CmdOptions(trace, self._dir_to_use)
+        self._ls_command_options.add_option(aliases=['H'],
+                                            function=self._ls_command_options.ls,
+                                            description="Hello World XY Data",
+                                            settings={CmdOptions.Settings.pattern: '*_XY.json'})
+        self._train_command_options = CmdOptions(trace, self._dir_to_use)
+        self._train_command_options.add_option(aliases=['H'],
+                                               function=self._train_hello_world,
+                                               description="Load data & Train Hello World network",
+                                               settings={CmdOptions.Settings.pattern: '*{}*_XY.json'})
+        self._predict_command_options = CmdOptions(trace, self._dir_to_use)
+        self._predict_command_options.add_option(aliases=['H'],
+                                                 function=self._predict_hello_world,
+                                                 description="Make a prediction using the Hello World network",
+                                                 settings={})
         return
 
-    def do_net(self,
-               args) -> None:
+    def do_build(self,
+                 args) -> str:
         """
         Create a Neural Network of the requested type
         :param args: The parameters required to create / define the network
         """
-        self._net_command_options.do_option(args)
-        return
+        self._neural_net = self._net_command_options.do_option(args)  # noqa
+        return self._prompt()
 
     def _hello_world(self,
-                     _: Tuple[str]) -> str:
+                     _: Dict,
+                     __: Tuple[str]) -> NeuralNet:
         """
         Create a HelloWorld Neural Network to cover the intuition of training
+        :param __: Optional settings to pass to the NN
         :param _: Optional arguments to pass to the NN
         :return: A simple hello world NN
         """
-        sn = SimpleNet()
+        sn = HelloWorldNet(self._trace, self._dir_to_use)
         sn.build()
         self._trace.log().info("{}".format(sn))
-        sz = 250
-        x = np.zeros((sz, 1))
-        y = np.zeros((sz, 1))
-        for i in range(0, sz):
-            x[i] = i * ((2 * np.pi) / sz)
-            y[i] = np.sin(x[i][0])
-
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, shuffle=True)
-        # x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-        # x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-
-        sn.train(x_train, y_train)
-        sn.test(x_test, y_test)
-        sn.dump_to_json("{}//{}".format(self._dir_to_use, 'test.json'))
-
-        return "(net)"
+        return sn
 
     def do_exit(self,
                 args) -> None:
@@ -82,3 +85,101 @@ class Ex4CmdDo(Ex4Cmd):
         Terminate the session
         """
         sys.exit(0)
+
+    def do_train(self,
+                 args) -> str:
+        """
+        Train the neural network created by the net command
+        :param args: The parameters required to Train the network
+        """
+        self._train_command_options.do_option(args, [])
+        return self._prompt()
+
+    def _train_hello_world(self,
+                           settings: Dict,
+                           args: Tuple[str]) -> None:
+        """
+        Load hello world data and train the neural network created by the net command
+        :param args: The parameters required to Load and Train the network
+        """
+        if args is not None and len(args) > 0:
+            data_file = str(settings[CmdOptions.Settings.pattern]).format(args[0])
+            data_file = self._train_command_options.pattern_to_fully_qualified_filename(data_file)
+            if data_file is not None:
+                if self._neural_net is not None:
+                    if isinstance(self._neural_net, HelloWorldNet):
+                        self._neural_net.load_and_train_from_json(data_file)
+                    else:
+                        self._trace.log().info(
+                            "Current model is type [{}] not expected [{}]".format(type(self._neural_net).__name__,
+                                                                                  HelloWorldNet.__name__))
+                else:
+                    self._trace.log().info("Must create a model before training")
+            else:
+                self._trace.log().info("Failed to load data and train network")
+        else:
+            self._trace.log().info("missing X Y data file name required to load and train network")
+        return
+
+    def do_predict(self,
+                   args) -> str:
+        """
+        Make a prediction using the built and trained hello world Neural Network
+        :param args: The parameters required to Test the network
+        """
+        self._predict_command_options.do_option(args)
+        return self._prompt()
+
+    def _predict_hello_world(self,
+                             _: Dict,
+                             args: Tuple[str]) -> None:
+        """
+        Make a prediction based on a built and trained HelloWorld NN
+        :param _: Settings Optional settings to specialise the prediction
+        :param args: The parameters required to Load and Train the network
+        """
+        if args is not None and len(args) > 0:
+            x_value = args[0]
+            try:
+                x_value = float(x_value)  # will throw if str not float
+                if self._neural_net is not None:
+                    if isinstance(self._neural_net, HelloWorldNet):
+                        y_actual, y_expected = self._neural_net.predict(float(x_value))
+                        self._trace.log().info(
+                            "For [{:10.6f}] y predicted = [{:10.6f}] y expected = [{:10.6f}]".format(x_value,
+                                                                                                     y_actual,
+                                                                                                     y_expected))
+                        pass
+                    else:
+                        self._trace.log().info(
+                            "Current model is type [{}] not expected [{}]".format(type(self._neural_net).__name__,
+                                                                                  HelloWorldNet.__name__))
+                else:
+                    self._trace.log().info("Must create a model before training")
+            except Exception as e:
+                self._trace.log().info("Failed to predict for value [{:12.6f}]".format(x_value))
+        else:
+            self._trace.log().info("missing X value to predict")
+        return
+
+    def do_list(self,
+                args) -> str:
+        """
+        List local files that match the requested type
+        :param args: Optional arguments to narrow the list
+        :return: updated prompt
+        """
+        matching_files = self._ls_command_options.do_option(args, [])
+        for file_name in matching_files:  # noqa
+            self._trace.log().info(file_name)
+        return self._prompt()
+
+    def _prompt(self) -> str:
+        """
+        The navigation prompt
+        :return: The dynamic net prompt
+        """
+        prompt = '(net)'
+        if self._neural_net is not None:
+            prompt = "({}:{})".format(self._neural_net.build_context_name(), self._neural_net.network_architecture())
+        return prompt
