@@ -127,6 +127,8 @@ class Ex4CmdDo(Ex4Cmd):
         Make a prediction using the built and trained hello world Neural Network
         :param args: The parameters required to Test the network
         """
+        self._neural_net.gen_training_data("test1_XY", True)
+
         self._predict_command_options.do_option(args)
         return self._prompt()
 

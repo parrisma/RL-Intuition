@@ -1,4 +1,5 @@
 import json
+from json import JSONEncoder
 
 
 class ValsJson:
@@ -27,7 +28,8 @@ class ValsJson:
 
     @staticmethod
     def save_values_as_json(vals,
-                            filename: str):
+                            filename: str,
+                            encoder: JSONEncoder = None):
         """
         Convert the given Values to JSON and persist to the given file name.
 
@@ -35,14 +37,22 @@ class ValsJson:
 
         :param vals: values structure to save
         :param filename: The full path and filename to save the Q Values as
+        :param encoder: Optional custom encoder
         :return: None - but raise exception on error
         """
         fp = None
         try:
             fp = open(filename, "w")
-            json.dump(obj=vals,
-                      fp=fp,
-                      allow_nan=True)
+            if encoder is None:
+                json.dump(obj=vals,
+                          fp=fp,
+                          allow_nan=True)
+            else:
+                json.dump(obj=vals,
+                          fp=fp,
+                          allow_nan=True,
+                          cls=encoder)
+
         except Exception as e:
             raise UserWarning("Failed to save values structure to file [{}] with error [{}]".format(
                 filename,

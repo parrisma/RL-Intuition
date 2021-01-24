@@ -15,6 +15,7 @@ class Experiment4(ExperimentBase):
         # Needed to bootstrap the base environment but not used in this experiment so just use
         # random agent arbitrarily.
         super().__init__(RandomPlayAgent.RandomAgentFactory())
+        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
         self._trace.enable_tf_capture(tf.get_logger())
         return
 
