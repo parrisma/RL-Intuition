@@ -40,6 +40,41 @@ class HelloWorldNet(NeuralNet):
         batch_size = "batch size"
         interim = "interim"
 
+    class TestCallback(tf.keras.callbacks.Callback):
+        """
+        Call back to dump interim test details while training
+        """
+
+        def __init__(self,
+                     trace: Trace,
+                     x_test: np.ndarray,
+                     y_test: np.ndarray,
+                     num_epoch: int,
+                     summary: Dict[str, List[float]],
+                     summary_file_root: str):
+            super().__init__()
+            self._trace = trace
+            self._x_test = x_test
+            self._y_test = y_test
+            self._interim_steps = NeuralNet.exp_steps(num_epoch)
+            self._summary = summary
+            self.summary_file_root = summary_file_root
+            return
+
+        def on_epoch_end(self, epoch, logs={}):
+            """
+            Run and save predictions if epoch in the list of interim epochs to report on
+            :param epoch: The current epoch
+            :param logs: n/a
+            """
+            if epoch in self._interim_steps:
+                self._trace.log().info("Learning rate {:12.11f}".format(tf.keras.backend.eval(self.model.optimizer.lr)))
+                self._trace.log().info("Run interim prediction at epoch {}".format(epoch))
+                predictions = self.model.predict(self._x_test)
+                predictions = predictions.reshape(len(predictions))
+                self._summary["{}_{:04d}".format(self.summary_file_root, epoch)] = predictions.tolist()
+                return
+
     def __init__(self,
                  trace: Trace,
                  dir_to_use: str):
@@ -83,7 +118,7 @@ class HelloWorldNet(NeuralNet):
         Set the Hyper Parameters for the Hello World Net
         """
         self._hyper_params.set(self.Names.learning_rate, 0.001, "Adam Optimizer learning rate")
-        self._hyper_params.set(self.Names.num_epoch, 250, "Number of training epochs")
+        self._hyper_params.set(self.Names.num_epoch, 1000, "Number of training epochs")
         self._hyper_params.set(self.Names.batch_size, 32, "Number of samples per training batch")
         return
 
@@ -117,18 +152,23 @@ class HelloWorldNet(NeuralNet):
         self._model = tf.keras.models.Sequential(
             [
                 tf.keras.layers.Dense(input_shape=(1,), units=1, name='input'),
-                tf.keras.layers.Dense(32, activation=tf.nn.relu, name='dense1'),
-                tf.keras.layers.Dense(256, activation=tf.nn.relu, name='dense2'),
-                tf.keras.layers.Dense(32, activation=tf.nn.relu, name='dense3'),
+                tf.keras.layers.Dense(80, activation=tf.nn.relu, name='dense1'),
+                tf.keras.layers.Dropout(.1, name='dropout-1-10pct'),
+                tf.keras.layers.Dense(400, activation=tf.nn.relu, name='dense2'),
+                tf.keras.layers.Dropout(.1, name='dropout-2-10pct'),
+                tf.keras.layers.Dense(40, activation=tf.nn.relu, name='dense3'),
                 tf.keras.layers.Dense(1, name='output')
             ]
         )
 
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._hyper_params.get(self.Names.learning_rate))
+        # optimizer = tf.keras.optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
         self._model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=self._hyper_params.get(self.Names.learning_rate)),
+            optimizer=optimizer,
             loss=tf.keras.losses.mean_squared_error)
 
         self._hyper_params.save_to_json(self.hyper_params_file)
+        # ToDo save model weights to allow reset on new training
 
         return
 
@@ -156,35 +196,34 @@ class HelloWorldNet(NeuralNet):
         self._x_max = np.max(x_train)
 
         self._trace.log().info("Start training: context [{}]".format(self._train_context_name))
-        num_epoch = self._hyper_params.get(self.Names.num_epoch)
-        interim_steps = NeuralNet.exp_steps(num_epoch)
-        self._summary[self.Names.loss] = list()
-        for e in range(0, num_epoch):
-            history = self._model.fit(x_train, y_train,
-                                      epochs=1,
-                                      batch_size=self._hyper_params.get(self.Names.batch_size),
-                                      verbose=2)
-            self._summary[self.Names.loss].extend(history.history['loss'])
-            if e in interim_steps:
-                self._trace.log().info("Run interim prediction at epoch {}".format(e))
-                self._test(x_test, y_test, interim=e)
-
+        num_epochs = self._hyper_params.get(self.Names.num_epoch)
+        history = self._model.fit(x_train, y_train,
+                                  epochs=num_epochs,
+                                  batch_size=self._hyper_params.get(self.Names.batch_size),
+                                  verbose=2,
+                                  callbacks=[self.TestCallback(trace=self._trace,
+                                                               x_test=x_test,
+                                                               y_test=y_test,
+                                                               num_epoch=num_epochs,
+                                                               summary=self._summary,
+                                                               summary_file_root=self.Names.predictions_interim),
+                                             tf.keras.callbacks.LearningRateScheduler(HelloWorldNet.lr_step_decay)
+                                             ]
+                                  )
+        self._test(x_test, y_test)
+        self._summary[self.Names.loss] = history.history['loss']
         self._summary[self.Names.x_train] = x_train.tolist()
         self._summary[self.Names.y_train] = y_train.tolist()
         self._trace.log().info("End training: context [{}]".format(self._train_context_name))
         return
 
-    def _train_callback(self) -> tf.keras.callbacks.ModelCheckpoint:
-        """
-        Model checkpoint to dump model weights for best fit.
-        :return: ModelCheckpoint
-        """
-        return tf.keras.callbacks.ModelCheckpoint(
-            filepath=self.model_checkpoint_file,
-            save_weights_only=True,
-            monitor='loss',
-            mode='min',
-            save_best_only=True)
+    @staticmethod
+    def lr_step_decay(epoch):
+        initial_lrate = 0.001
+        drop = 0.5
+        epochs_drop = 100.0
+        lrate = initial_lrate * np.power(drop, np.floor((1 + epoch) / epochs_drop))
+        return lrate
 
     def _test(self,
               x_test: np.ndarray,
@@ -201,20 +240,13 @@ class HelloWorldNet(NeuralNet):
         if self._model is None:
             self._trace.log().info("Build model before training")
 
-        interim = NeuralNet.kwargs_get(arg_name=self.Names.interim, default=None, expected_type=int, **kwargs)
-
         predictions = self._model.predict(x_test)
         predictions = predictions.reshape(len(predictions))
-
-        if interim is None:
-            self._summary[self.Names.x_test] = x_test.tolist()
-            self._summary[self.Names.y_test] = y_test.tolist()
-            self._summary[self.Names.predictions] = predictions.tolist()
-            mse = (np.square(y_test - predictions)).mean(axis=0)
-            self._trace.log().info("Mean Squared Error on test set [{}]".format(mse))
-        else:
-            self._summary["{}_{:04d}".format(self.Names.predictions_interim, interim)] = predictions.tolist()
-            mse = (np.square(y_test - predictions)).mean(axis=0)
+        self._summary[self.Names.x_test] = x_test.tolist()
+        self._summary[self.Names.y_test] = y_test.tolist()
+        self._summary[self.Names.predictions] = predictions.tolist()
+        mse = (np.square(y_test - predictions)).mean(axis=0)
+        self._trace.log().info("Mean Squared Error on test set [{}]".format(mse))
 
         return mse
 
@@ -350,9 +382,9 @@ class HelloWorldNet(NeuralNet):
         # Eliminate training examples in a given interval to force a training issue. Add the removed items
         # to the test set so that the issue (gap) is clear in the test results
         if with_gap:
-            mid = (max_x - min_x) / 2.0
-            gap_min = mid - (mid * 0.1)
-            gap_max = mid + (mid * 0.1)
+            mid = (max_x - min_x) / 4.0
+            gap_min = mid - (mid * 0.5)
+            gap_max = mid + (mid * 0.5)
             x_gap = list()
             y_gap = list()
             for i in range(len(x_train)):
