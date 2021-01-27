@@ -12,9 +12,9 @@ from src.tictactoe.net.names import Names
 from src.tictactoe.net.lr_decay import LRDecay
 
 
-class HelloWorldNet(NeuralNet):
+class QNet(NeuralNet):
     """
-    Build a fully connected NN for univariate prediction
+    Build a fully connected NN for prediction of Q Values given a 9 feature TicTacToe state
     """
     _model: tf.keras.models.Sequential
     _summary: Dict[str, List[float]]
@@ -23,9 +23,9 @@ class HelloWorldNet(NeuralNet):
     _base_dir_to_use: str
     _dir_to_use: str
     _actual_func: Callable[[float], float]
-    _x_min: float
-    _x_max: float
     _hyper_params: HyperParams
+    #  Dict[Player(X|O), Dict[AgentPerspective(X|O), Dict[StateAsStr('000000000'), List[of nine q values as float]]]]
+    _q_values: Dict[str, Dict[str, Dict[str, List[float]]]]
 
     class TestCallback(tf.keras.callbacks.Callback):
         """
@@ -67,19 +67,19 @@ class HelloWorldNet(NeuralNet):
                  dir_to_use: str):
         self._trace = trace
         self._base_dir_to_use = dir_to_use
-        self._dir_to_use, self._train_context_name = self._new_context()
+        self._dir_to_use = None  # noqa
+        self._train_context_name = None  # noqa
         self._hyper_params = HyperParams()
         self._set_hyper_params()
         self._model = None  # noqa
         self._summary = None  # noqa
-        self._x_min = None  # noqa
-        self._x_max = None  # noqa
+        self._q_values = None  # noqa
         self._reset()
         return
 
     def _new_context(self) -> Tuple[str, str]:
         """
-        Create a new context name and save area for mode bui.d/run/test
+        Create a new context name and save area for mode build/run/test
         :return: the name of the new context and its directory 'to use'
         """
         context_name = NameGen.generate_random_name()
@@ -116,6 +116,8 @@ class HelloWorldNet(NeuralNet):
         A unique name given to the network each time a build net is executed
         :params args: The unique name of the build context
         """
+        if self._train_context_name is None:
+            self._new_context()
         return self._train_context_name
 
     def network_architecture(self,
@@ -138,13 +140,17 @@ class HelloWorldNet(NeuralNet):
 
         self._model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.Dense(input_shape=(1,), units=1, name='input'),
-                tf.keras.layers.Dense(80, activation=tf.nn.relu, name='dense1'),
+                tf.keras.layers.Dense(input_shape=(9,), units=1, name='input'),
+                tf.keras.layers.Dense(100, activation=tf.nn.relu, name='dense1'),
                 tf.keras.layers.Dropout(.1, name='dropout-1-10pct'),
-                tf.keras.layers.Dense(400, activation=tf.nn.relu, name='dense2'),
+                tf.keras.layers.Dense(500, activation=tf.nn.relu, name='dense2'),
                 tf.keras.layers.Dropout(.1, name='dropout-2-10pct'),
-                tf.keras.layers.Dense(40, activation=tf.nn.relu, name='dense3'),
-                tf.keras.layers.Dense(1, name='output')
+                tf.keras.layers.Dense(1500, activation=tf.nn.relu, name='dense3'),
+                tf.keras.layers.Dropout(.1, name='dropout-3-10pct'),
+                tf.keras.layers.Dense(300, activation=tf.nn.relu, name='dense4'),
+                tf.keras.layers.Dropout(.1, name='dropout-4-10pct'),
+                tf.keras.layers.Dense(50, activation=tf.nn.relu, name='dense5'),
+                tf.keras.layers.Dense(9, name='output')
             ]
         )
 
@@ -177,9 +183,6 @@ class HelloWorldNet(NeuralNet):
         """
         if self._model is None:
             self._trace.log().info("Build model before training")
-
-        self._x_min = np.min(x_train)
-        self._x_max = np.max(x_train)
 
         self._trace.log().info("Start training: context [{}]".format(self._train_context_name))
         num_epochs = self._hyper_params.get(Names.num_epoch)
@@ -249,25 +252,59 @@ class HelloWorldNet(NeuralNet):
         :param test_split: The % (0.0 tp 1.0) of the training data to use as test data, default = 20% (0.2)
         :param shuffle: If True shuffle the data before splitting, default = True
         :return: x_train, y_train, x_test, y_test
+
+        Q Value data is supplied for each of players X and O, and then for each player the perspective of the
+        board state and Q Values for both X and O.
+
+        So this load function creates an X feature vector of the form
+            <Player X|O><Perspective X|O><Board State>
+        By default X is represented by -1
+                   O is represented by 1
+        This the full feature X feature vector is 11 digits
+
+        The Y Value is the nine Q Values for each of the actions possible in a given state so the Y value is
+        nine digits. NaN in the input means the Q Value training saw no data for that action. So we replace NaN
+        with zero. This NaN substitution presents a risk as we could break the greedy evaluation of the state
+        as zero may suddenly look like the best action if the 'real' Q Values for given state are all negative.
+        This cannot be avoided and the upshot is that a Q Value data set with NaN is weak data and needs more games
+        and exploration to plug these gaps with actual Q Value update events.
         """
         if test_split < 0.1 or test_split > 1.0:
             test_split = 1.0
+        x = list()
+        y = list()
         res = list()
         data_dict = ValsJson().load_values_from_json(filename)
         if data_dict is not None:
-            if type(data_dict) == dict and Names.x_train in data_dict and Names.y_train in data_dict:
-                x = np.asarray(data_dict[Names.x_train], dtype=np.float)
-                y = np.asarray(data_dict[Names.y_train], dtype=np.float)
-                if Names.x_test in data_dict and Names.y_test in data_dict:
-                    x_train = x
-                    y_train = y
-                    x_test = np.asarray(data_dict[Names.x_test], dtype=np.float)
-                    y_test = np.asarray(data_dict[Names.y_test], dtype=np.float)
-                else:
-                    x_train, x_test, y_train, y_test = train_test_split(x, y,
-                                                                        test_size=test_split,
-                                                                        random_state=42,
-                                                                        shuffle=shuffle)
+            if type(data_dict):
+                for player, plid in [['X', -1], ['O', 1]]:
+                    if player in data_dict:
+                        for perspective, psid in [['X', -1], ['O', 1]]:
+                            if perspective in data_dict[player]:
+                                for state, qvals in data_dict[player][perspective].items():
+                                    x_as_feature_str = "{}{}{}".format(plid, psid, state)
+                                    x_as_feature_vec = np.zeros((11))
+                                    i = 0
+                                    j = 0
+                                    while j < len(x_as_feature_str):
+                                        if x_as_feature_str[j] == '-':
+                                            x_as_feature_vec[i] = -1
+                                            j += 2
+                                        elif x_as_feature_str[j] == '1' or x_as_feature_str[j] == '0':
+                                            x_as_feature_vec[i] = int(x_as_feature_str[j])
+                                            j += 1
+                                        else:
+                                            raise ValueError(
+                                                "Bad value in Q Val state got [{}], expected only 0, 1 or -1".format(
+                                                    x_as_feature_str[j]))
+                                        i += 1
+                                    y_val = np.nan_to_num(qvals, nan=-np.inf)
+                                    x.append(x_as_feature_vec)
+                                    y.append(y_val)
+                x_train, x_test, y_train, y_test = train_test_split(x, y,
+                                                                    test_size=test_split,
+                                                                    random_state=42,
+                                                                    shuffle=shuffle)
                 res = [x_train, x_test, y_train, y_test]
             else:
                 self._trace.log().info("No X and Y data found in [{}]".format(filename))
@@ -299,11 +336,11 @@ class HelloWorldNet(NeuralNet):
         return
 
     def predict(self,
-                x_value: float,
+                x_value: np.ndarray,
                 *args,
                 **kwargs) -> Tuple[np.float, np.float]:
         """
-        :param x_value: The X value to predict Y for
+        :param x_value: The X feature vector to predict
         :params args: The arguments to parse for net compile parameters
         :param args:
         :param kwargs:
@@ -317,11 +354,6 @@ class HelloWorldNet(NeuralNet):
             self._trace.log().info("Train model before predicting")
             return 0, 0
 
-        if x_value < self._x_min or x_value > self._x_max:
-            self._trace.log().info(
-                "Given X[{:10.3f}] is outside of training range [{:10.6f}] : [{:10.6f}]".format(x_value,
-                                                                                                self._x_min,
-                                                                                                self._x_max))
         self._trace.log().info(
             "Y expected based on assumption source function is [{}]".format(self._actual_func.__name__))
 
@@ -332,63 +364,6 @@ class HelloWorldNet(NeuralNet):
         y_expected = self._actual_func(x[0])
 
         return y_actual[0], y_expected
-
-    def gen_training_data(self,
-                          filename: str,
-                          with_gap: bool = False,
-                          out_of_band_test: bool = False,
-                          num_data: int = 250,
-                          min_x: float = 0,
-                          max_x: float = 2 * np.pi) -> None:
-        """
-        Generate a HelloWorld Train/Test data set based on defined function
-        :param filename: The filename to save the JSON results as
-        :param with_gap: Leave a gap +- 10% around the centre range of the training data: False
-        :param out_of_band_test: Include test points that are not in the training set: False
-        :param num_data: the number of data points to create: 250
-        :param min_x: the minimum x value : 0
-        :param max_x: the maximum x value : 2 * PI
-        """
-        incr = (max_x - min_x) / num_data
-        x = list()
-        y = list()
-        for i in range(num_data):
-            x.append(i * incr)
-            y.append(self._actual_func(x[-1]))
-
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=.2, random_state=42, shuffle=True)
-
-        # Eliminate training examples in a given interval to force a training issue. Add the removed items
-        # to the test set so that the issue (gap) is clear in the test results
-        if with_gap:
-            mid = (max_x - min_x) / 4.0
-            gap_min = mid - (mid * 0.5)
-            gap_max = mid + (mid * 0.5)
-            x_gap = list()
-            y_gap = list()
-            for i in range(len(x_train)):
-                if x_train[i] < gap_min or x_train[i] > gap_max:
-                    x_gap.append(x_train[i])
-                    y_gap.append(y_train[i])
-                else:
-                    x_test.append(x_train[i])
-                    y_test.append(y_train[i])
-            x_train = x_gap
-            y_train = y_gap
-
-        if out_of_band_test:
-            for i in range(int(num_data * .1)):
-                pass
-
-        res = dict()
-        res[Names.x_train] = x_train
-        res[Names.y_train] = y_train
-        res[Names.x_test] = x_test
-        res[Names.y_test] = y_test
-
-        full_file = "{}//{}.json".format(self._base_dir_to_use, filename)
-        ValsJson.save_values_as_json(vals=res, filename=full_file)
-        return
 
     @property
     def summary_file(self) -> str:

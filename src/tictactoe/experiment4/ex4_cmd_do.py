@@ -8,6 +8,7 @@ from src.tictactoe.ttt.tictactoe import TicTacToe
 from src.tictactoe.event.TicTacToeEventStream import TicTacToeEventStream
 from src.tictactoe.net.neural_net import NeuralNet
 from src.tictactoe.net.hello_world_net import HelloWorldNet
+from src.tictactoe.net.q_net import QNet
 
 
 class Ex4CmdDo(Ex4Cmd):
@@ -21,7 +22,7 @@ class Ex4CmdDo(Ex4Cmd):
     _last_net: str
     _idx: int
     _neural_net: NeuralNet
-    _net_command_options: CmdOptions
+    _build_command_options: CmdOptions
 
     def __init__(self,
                  ttt: TicTacToe,
@@ -35,20 +36,34 @@ class Ex4CmdDo(Ex4Cmd):
         self._last_net = None  # noqa
         self._idx = 0
         self._neural_net = None  # noqa
-        self._net_command_options = CmdOptions(trace, self._dir_to_use)
-        self._net_command_options.add_option(aliases=['H'],
-                                             function=self._hello_world,
-                                             description="Hello World Network")
+        self._build_command_options = CmdOptions(trace, self._dir_to_use)
+        self._build_command_options.add_option(aliases=['H'],
+                                               function=self._hello_world,
+                                               description="Hello World Network")
+        self._build_command_options.add_option(aliases=['Q'],
+                                               function=self._q_val,
+                                               description="Q Value Network")
+
         self._ls_command_options = CmdOptions(trace, self._dir_to_use)
         self._ls_command_options.add_option(aliases=['H'],
                                             function=self._ls_command_options.ls,
                                             description="Hello World XY Data",
                                             settings={CmdOptions.Settings.pattern: '*_XY.json'})
+        self._ls_command_options.add_option(aliases=['Q'],
+                                            function=self._ls_command_options.ls,
+                                            description="Q Value XY Data",
+                                            settings={CmdOptions.Settings.pattern: 'q_vals_*.json'})
+
         self._train_command_options = CmdOptions(trace, self._dir_to_use)
         self._train_command_options.add_option(aliases=['H'],
                                                function=self._train_hello_world,
                                                description="Load data & Train Hello World network",
                                                settings={CmdOptions.Settings.pattern: '*{}*_XY.json'})
+        self._train_command_options.add_option(aliases=['Q'],
+                                               function=self._train_q,
+                                               description="Load data & Train Q Value network",
+                                               settings={CmdOptions.Settings.pattern: 'q_vals_{}*.json'})
+
         self._predict_command_options = CmdOptions(trace, self._dir_to_use)
         self._predict_command_options.add_option(aliases=['H'],
                                                  function=self._predict_hello_world,
@@ -62,7 +77,7 @@ class Ex4CmdDo(Ex4Cmd):
         Create a Neural Network of the requested type
         :param args: The parameters required to create / define the network
         """
-        self._neural_net = self._net_command_options.do_option(args)  # noqa
+        self._neural_net = self._build_command_options.do_option(args)  # noqa
         return self._prompt()
 
     def _hello_world(self,
@@ -75,6 +90,20 @@ class Ex4CmdDo(Ex4Cmd):
         :return: A simple hello world NN
         """
         sn = HelloWorldNet(self._trace, self._dir_to_use)
+        sn.build()
+        self._trace.log().info("{}".format(sn))
+        return sn
+
+    def _q_val(self,
+               _: Dict,
+               __: Tuple[str]) -> NeuralNet:
+        """
+        Create a Q Value Neural Network to 'learn' TicTacToe state to Q Value prediction
+        :param __: Optional settings to pass to the NN
+        :param _: Optional arguments to pass to the NN
+        :return: A simple hello world NN
+        """
+        sn = QNet(self._trace, self._dir_to_use)
         sn.build()
         self._trace.log().info("{}".format(sn))
         return sn
@@ -95,11 +124,12 @@ class Ex4CmdDo(Ex4Cmd):
         self._train_command_options.do_option(args, [])
         return self._prompt()
 
-    def _train_hello_world(self,
-                           settings: Dict,
-                           args: Tuple[str]) -> None:
+    def _train(self,
+               net_type: type,
+               settings: Dict,
+               args: Tuple[str]) -> None:
         """
-        Load hello world data and train the neural network created by the net command
+        Load teat/training data and train the neural network created by the build command
         :param args: The parameters required to Load and Train the network
         """
         if args is not None and len(args) > 0:
@@ -107,12 +137,12 @@ class Ex4CmdDo(Ex4Cmd):
             data_file = self._train_command_options.pattern_to_fully_qualified_filename(data_file)
             if data_file is not None:
                 if self._neural_net is not None:
-                    if isinstance(self._neural_net, HelloWorldNet):
-                        self._neural_net.load_and_train_from_json(data_file)
+                    if isinstance(self._neural_net, net_type):
+                        self._neural_net.load_and_train_from_json(data_file)  # noqa (confused by type check)
                     else:
                         self._trace.log().info(
                             "Current model is type [{}] not expected [{}]".format(type(self._neural_net).__name__,
-                                                                                  HelloWorldNet.__name__))
+                                                                                  net_type.__name__))
                 else:
                     self._trace.log().info("Must create a model before training")
             else:
@@ -121,14 +151,32 @@ class Ex4CmdDo(Ex4Cmd):
             self._trace.log().info("missing X Y data file name required to load and train network")
         return
 
+    def _train_hello_world(self,
+                           settings: Dict,
+                           args: Tuple[str]) -> None:
+        """
+        Load hello world data and train the neural network created by the net command
+        :param args: The parameters required to Load and Train the network
+        """
+        self._train(HelloWorldNet, settings, args)
+        return
+
+    def _train_q(self,
+                 settings: Dict,
+                 args: Tuple[str]) -> None:
+        """
+        Load hello Q Value data and train the neural network created by the net command
+        :param args: The parameters required to Load and Train the network
+        """
+        self._train(QNet, settings, args)
+        return
+
     def do_predict(self,
                    args) -> str:
         """
         Make a prediction using the built and trained hello world Neural Network
         :param args: The parameters required to Test the network
         """
-        self._neural_net.gen_training_data("test_full_XY")
-
         self._predict_command_options.do_option(args)
         return self._prompt()
 
