@@ -2,21 +2,24 @@ from typing import List, Dict, Callable, Tuple
 from os import path, mkdir
 import tensorflow as tf
 import numpy as np
-from sklearn.model_selection import train_test_split
+from copy import deepcopy
+from sklearn.utils import shuffle
 from src.lib.namegen.namegen import NameGen
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.net.neural_net import NeuralNet
 from src.tictactoe.util.vals_json import ValsJson
 from src.tictactoe.net.hyper_params import HyperParams
 from src.tictactoe.net.names import Names
-from src.tictactoe.net.lr_decay import LRDecay
+from src.tictactoe.net.lr_schedule import LRScheduleCallback
+from src.tictactoe.net.lr_exponential_decay import LRExponentialDecay
+from src.tictactoe.net.lr_fixed_step_decay import LRFixedStepDecay
 
 
 class QNet(NeuralNet):
     """
     Build a fully connected NN for prediction of Q Values given a 9 feature TicTacToe state
     """
-    _model: tf.keras.models.Sequential
+    _model: tf.keras.Model
     _summary: Dict[str, List[float]]
     _train_context_name: str
     _trace: Trace
@@ -26,6 +29,14 @@ class QNet(NeuralNet):
     _hyper_params: HyperParams
     #  Dict[Player(X|O), Dict[AgentPerspective(X|O), Dict[StateAsStr('000000000'), List[of nine q values as float]]]]
     _q_values: Dict[str, Dict[str, Dict[str, List[float]]]]
+    _lr_schedule: LRScheduleCallback
+
+    X_VAL = -1
+    O_VAL = 1
+    B_VAL = 0
+    X_CHR = 'X'
+    O_CHR = 'O'
+    B_CHR = '_'
 
     class TestCallback(tf.keras.callbacks.Callback):
         """
@@ -38,14 +49,16 @@ class QNet(NeuralNet):
                      y_test: np.ndarray,
                      num_epoch: int,
                      summary: Dict[str, List[float]],
-                     summary_file_root: str):
+                     summary_file_root: str,
+                     lr_schedule: LRScheduleCallback):
             super().__init__()
             self._trace = trace
             self._x_test = x_test
             self._y_test = y_test
             self._interim_steps = NeuralNet.exp_steps(num_epoch)
             self._summary = summary
-            self.summary_file_root = summary_file_root
+            self._summary_file_root = summary_file_root
+            self._lr_schedule = lr_schedule
             return
 
         def on_epoch_end(self, epoch, logs=None):
@@ -54,12 +67,12 @@ class QNet(NeuralNet):
             :param epoch: The current epoch
             :param logs: n/a
             """
+            self._trace.log().info("Learning rate {:12.11f}".format(tf.keras.backend.eval(self.model.optimizer.lr)))
             if epoch in self._interim_steps:
-                self._trace.log().info("Learning rate {:12.11f}".format(tf.keras.backend.eval(self.model.optimizer.lr)))
+                self._lr_schedule.update()
                 self._trace.log().info("Run interim prediction at epoch {}".format(epoch))
                 predictions = self.model.predict(self._x_test)
-                predictions = predictions.reshape(len(predictions))
-                self._summary["{}_{:04d}".format(self.summary_file_root, epoch)] = predictions.tolist()
+                self._summary["{}_{:04d}".format(self._summary_file_root, epoch)] = predictions.tolist()
                 return
 
     def __init__(self,
@@ -74,6 +87,10 @@ class QNet(NeuralNet):
         self._model = None  # noqa
         self._summary = None  # noqa
         self._q_values = None  # noqa
+        self._lr_schedule = LRExponentialDecay(num_epoch=self._hyper_params.get(Names.num_epoch),
+                                               initial_lr=0.001,
+                                               decay_rate=0.00005)
+        # self._lr_schedule = LRFixedStepDecay(lr_steps=[0.001, 0.001, 0.0005])
         self._reset()
         return
 
@@ -98,6 +115,7 @@ class QNet(NeuralNet):
         self._summary = dict()
         self._actual_func = np.sin
         self._dir_to_use, self._train_context_name = self._new_context()
+        self._lr_schedule.reset()
         return
 
     def _set_hyper_params(self) -> None:
@@ -105,8 +123,8 @@ class QNet(NeuralNet):
         Set the Hyper Parameters for the Hello World Net
         """
         self._hyper_params.set(Names.learning_rate, 0.001, "Adam Optimizer learning rate")
-        self._hyper_params.set(Names.num_epoch, 1000, "Number of training epochs")
-        self._hyper_params.set(Names.batch_size, 32, "Number of samples per training batch")
+        self._hyper_params.set(Names.num_epoch, 200, "Number of training epochs")
+        self._hyper_params.set(Names.batch_size, 256, "Number of samples per training batch")
         return
 
     def build_context_name(self,
@@ -138,26 +156,23 @@ class QNet(NeuralNet):
         """
         self._reset()
 
-        self._model = tf.keras.models.Sequential(
-            [
-                tf.keras.layers.Dense(input_shape=(9,), units=1, name='input'),
-                tf.keras.layers.Dense(100, activation=tf.nn.relu, name='dense1'),
-                tf.keras.layers.Dropout(.1, name='dropout-1-10pct'),
-                tf.keras.layers.Dense(500, activation=tf.nn.relu, name='dense2'),
-                tf.keras.layers.Dropout(.1, name='dropout-2-10pct'),
-                tf.keras.layers.Dense(1500, activation=tf.nn.relu, name='dense3'),
-                tf.keras.layers.Dropout(.1, name='dropout-3-10pct'),
-                tf.keras.layers.Dense(300, activation=tf.nn.relu, name='dense4'),
-                tf.keras.layers.Dropout(.1, name='dropout-4-10pct'),
-                tf.keras.layers.Dense(50, activation=tf.nn.relu, name='dense5'),
-                tf.keras.layers.Dense(9, name='output')
-            ]
-        )
+        ind = 11
+        outd = 9
 
-        optimizer = tf.keras.optimizers.Adam(learning_rate=self._hyper_params.get(Names.learning_rate))
+        ipt = tf.keras.layers.Input(shape=(ind,), name="input")
+        encode = tf.keras.layers.Dense(32, activation=tf.nn.relu, name='encode_dense1')(ipt)
+        encode = tf.keras.layers.Dense(256, activation=tf.nn.relu, name='encode_dense2')(encode)
+        encode = tf.keras.layers.Dense(2048, activation=tf.nn.relu, name='encode_dense3')(encode)
+        encode = tf.keras.layers.Dense(1024, activation=tf.nn.relu, name='encode_dense4')(encode)
+        decode = tf.keras.layers.Dense(512, activation=tf.nn.relu, name='decode_input')(encode)
+        decode = tf.keras.layers.Dense(outd, activation='linear', name='output')(decode)
+
+        self._model = tf.keras.Model(inputs=[ipt], outputs=[decode])
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
         self._model.compile(
             optimizer=optimizer,
             loss=tf.keras.losses.mean_squared_error)
+        # tf.keras.losses.mean_absolute_error
 
         self._hyper_params.save_to_json(self.hyper_params_file)
         # ToDo save model weights to allow reset on new training
@@ -195,9 +210,10 @@ class QNet(NeuralNet):
                                                                y_test=y_test,
                                                                num_epoch=num_epochs,
                                                                summary=self._summary,
-                                                               summary_file_root=Names.predictions_interim),
+                                                               summary_file_root=Names.predictions_interim,
+                                                               lr_schedule=self._lr_schedule),
                                              tf.keras.callbacks.LearningRateScheduler(
-                                                 LRDecay(num_epochs).lr_10step_decay)
+                                                 self._lr_schedule.lr)
                                              ]
                                   )
         self._test(x_test, y_test)
@@ -223,7 +239,6 @@ class QNet(NeuralNet):
             self._trace.log().info("Build model before training")
 
         predictions = self._model.predict(x_test)
-        predictions = predictions.reshape(len(predictions))
         self._summary[Names.x_test] = x_test.tolist()
         self._summary[Names.y_test] = y_test.tolist()
         self._summary[Names.predictions] = predictions.tolist()
@@ -242,10 +257,41 @@ class QNet(NeuralNet):
                                      filename=filename)
         return
 
+    def _new_load_from_json(self,
+                            filename: str,
+                            test_split: float = 0.2) -> List[np.ndarray]:
+        sz = 20000
+        xdim = 11
+        ydim = 9
+        x = np.zeros((sz, xdim))
+        y = np.zeros((sz, ydim))
+        d = dict()
+        r = 0
+
+        for i in range(sz):
+            xd = np.random.choice([-1, 0, 1], xdim, p=[0.25, .5, .25])
+            xds = np.array2string(xd)
+            if xds not in d:
+                d[xds] = (np.random.rand(ydim) - 0.5) * 2
+            else:
+                r += 1
+            x[i] = xd
+            y[i] = d[xds]
+
+        x_train, y_train = shuffle(x, y)
+        # Test set is just a copy of training set
+        tst_idx = np.random.choice(range(0, len(x_train)), int(len(x_train) * test_split))
+        x_test = np.zeros((x_train.shape[0], x_train.shape[1]))
+        y_test = np.zeros((y_train.shape[0], y_train.shape[1]))
+        for i in tst_idx:
+            x_test[i] = deepcopy(x_train[i])
+            y_test[i] = deepcopy(y_train[i])
+        res = [x_train, x_test, y_train, y_test]
+        return res
+
     def _load_from_json(self,
                         filename: str,
-                        test_split: float = 0.2,
-                        shuffle: bool = True) -> List[np.ndarray]:
+                        test_split: float = 0.2) -> List[np.ndarray]:
         """
         Load XY training data from given JSON file
         :param filename: The JSON file name with the training data in
@@ -290,7 +336,10 @@ class QNet(NeuralNet):
                                         if x_as_feature_str[j] == '-':
                                             x_as_feature_vec[i] = -1
                                             j += 2
-                                        elif x_as_feature_str[j] == '1' or x_as_feature_str[j] == '0':
+                                        elif x_as_feature_str[j] == '1':
+                                            x_as_feature_vec[i] = int(x_as_feature_str[j])
+                                            j += 1
+                                        elif x_as_feature_str[j] == '0':
                                             x_as_feature_vec[i] = int(x_as_feature_str[j])
                                             j += 1
                                         else:
@@ -298,13 +347,21 @@ class QNet(NeuralNet):
                                                 "Bad value in Q Val state got [{}], expected only 0, 1 or -1".format(
                                                     x_as_feature_str[j]))
                                         i += 1
-                                    y_val = np.nan_to_num(qvals, nan=-np.inf)
+                                    y_val = np.nan_to_num(qvals, nan=0) / 100
                                     x.append(x_as_feature_vec)
                                     y.append(y_val)
-                x_train, x_test, y_train, y_test = train_test_split(x, y,
-                                                                    test_size=test_split,
-                                                                    random_state=42,
-                                                                    shuffle=shuffle)
+                x = np.asarray(x)
+                y = np.asarray(y)
+                x_train, y_train = shuffle(x, y)
+                # Test set is just a copy of training set
+                sample_size = int(len(x_train) * test_split)
+                tst_idx = np.random.choice(range(0, len(x_train)), sample_size)
+                x_test = np.zeros((sample_size, x_train.shape[1]))
+                y_test = np.zeros((sample_size, y_train.shape[1]))
+
+                for i in range(0, sample_size):
+                    x_test[i] = x_train[tst_idx[i]]
+                    y_test[i] = y_train[tst_idx[i]]
                 res = [x_train, x_test, y_train, y_test]
             else:
                 self._trace.log().info("No X and Y data found in [{}]".format(filename))
@@ -341,7 +398,6 @@ class QNet(NeuralNet):
                 **kwargs) -> Tuple[np.float, np.float]:
         """
         :param x_value: The X feature vector to predict
-        :params args: The arguments to parse for net compile parameters
         :param args:
         :param kwargs:
         :return: predicted Y and expected Y (based on actual function)
@@ -354,16 +410,11 @@ class QNet(NeuralNet):
             self._trace.log().info("Train model before predicting")
             return 0, 0
 
-        self._trace.log().info(
-            "Y expected based on assumption source function is [{}]".format(self._actual_func.__name__))
-
-        x = np.zeros((1))
-        x[0] = np.float(x_value)
-        predictions = self._model.predict(x)
+        predictions = self._model.predict(x_value.reshape(1, 11))
         y_actual = predictions[0]
-        y_expected = self._actual_func(x[0])
+        y_expected = y_actual
 
-        return y_actual[0], y_expected
+        return y_actual, y_expected
 
     @property
     def summary_file(self) -> str:

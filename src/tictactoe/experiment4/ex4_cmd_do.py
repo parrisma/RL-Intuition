@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 from typing import Tuple, Dict
 from src.tictactoe.experiment4.ex4_cmd import Ex4Cmd
 from src.tictactoe.experiment.cmd_options import CmdOptions
@@ -68,6 +69,10 @@ class Ex4CmdDo(Ex4Cmd):
         self._predict_command_options.add_option(aliases=['H'],
                                                  function=self._predict_hello_world,
                                                  description="Make a prediction using the Hello World network",
+                                                 settings={})
+        self._predict_command_options.add_option(aliases=['Q'],
+                                                 function=self._predict_q,
+                                                 description="Make a prediction using the Q Value network",
                                                  settings={})
         return
 
@@ -210,6 +215,72 @@ class Ex4CmdDo(Ex4Cmd):
                 self._trace.log().info("Failed to predict for value [{:12.6f}]".format(x_value))
         else:
             self._trace.log().info("missing X value to predict")
+        return
+
+    @staticmethod
+    def _x_value_from_player_and_state(player: str,
+                                       state: str) -> np.ndarray:
+        """
+        Take the given player and state and convert to an X Value to make a Q Value prediction with
+        :param player: Single char X or O
+        :param state: Sequence of X,O,_ : where _ = Blank. position not played
+        :return: The X Value as numpy array shape(1,11)
+        """
+        res = list()
+        if player == QNet.X_CHR:
+            res.extend([-1] * 2)
+        elif player == QNet.O_CHR:
+            res.extend([1] * 2)
+        else:
+            raise ValueError("Player must be X or O - given {}".format(player))
+
+        if len(state) != 9:
+            raise ValueError("TicTacToe must have exactly 9 positions X, O or underscore _ for not played")
+
+        for s in state:
+            if s == QNet.X_CHR:
+                res.extend([-1])
+            elif s == QNet.O_CHR:
+                res.extend([1])
+            elif s == QNet.B_CHR:
+                res.extend([0])
+            else:
+                raise ValueError("State position must be X or O - given [{}]".format(s))
+
+        return np.asarray(res)
+
+    def _predict_q(self,
+                   _: Dict,
+                   args: Tuple[str]) -> None:
+        """
+        Make a prediction based on a built and trained Q Value Network
+        :param _: Settings Optional settings to specialise the prediction
+        :param args: The parameters required to Load and Train the network
+        """
+        if args is not None and len(args) == 2:
+            player = args[0].upper()
+            state = args[1].upper()
+            try:
+                x_value = self._x_value_from_player_and_state(player, state)  # will throw if error
+                if self._neural_net is not None:
+                    if isinstance(self._neural_net, QNet):
+                        y_actual, y_expected = self._neural_net.predict(x_value)
+                        self._trace.log().info("Prediction for Player [{}] in state [{}]".format(player, state))
+                        with np.printoptions(precision=6, suppress=True):
+                            self._trace.log().info("Y predicted = [{}] ".format(y_actual))
+                            self._trace.log().info("Y expected = [{}] ".format(y_expected))
+                        pass
+                    else:
+                        self._trace.log().info(
+                            "Current model is type [{}] not expected [{}]".format(type(self._neural_net).__name__,
+                                                                                  HelloWorldNet.__name__))
+                else:
+                    self._trace.log().info("Must create a model before training")
+            except Exception as e:
+                self._trace.log().info("Failed to predict for Player [{}] in state [{}]".format(player, state))
+                self._trace.log().info("[{}]".format(str(e)))
+        else:
+            self._trace.log().info("missing <Player X|O> and <State | XOXXOXOXO> to predict")
         return
 
     def do_list(self,

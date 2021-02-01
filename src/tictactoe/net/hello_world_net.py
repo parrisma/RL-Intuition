@@ -9,7 +9,7 @@ from src.tictactoe.net.neural_net import NeuralNet
 from src.tictactoe.util.vals_json import ValsJson
 from src.tictactoe.net.hyper_params import HyperParams
 from src.tictactoe.net.names import Names
-from src.tictactoe.net.lr_decay import LRDecay
+from src.tictactoe.net.lr_10step_decay import LR10StepDecay
 
 
 class HelloWorldNet(NeuralNet):
@@ -194,7 +194,7 @@ class HelloWorldNet(NeuralNet):
                                                                summary=self._summary,
                                                                summary_file_root=Names.predictions_interim),
                                              tf.keras.callbacks.LearningRateScheduler(
-                                                 LRDecay(num_epochs).lr_10step_decay)
+                                                 LR10StepDecay(num_epochs).lr_10step_decay)
                                              ]
                                   )
         self._test(x_test, y_test)

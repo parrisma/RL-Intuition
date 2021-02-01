@@ -1,4 +1,3 @@
-import logging
 import tensorflow as tf
 from src.tictactoe.experiment.experiment_base import ExperimentBase
 from src.tictactoe.agent.random_play_agent import RandomPlayAgent
