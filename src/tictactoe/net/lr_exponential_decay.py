@@ -28,7 +28,6 @@ class LRExponentialDecay(LRScheduleCallback):
         :return: the learning rate
         """
         return self._initial_lr * np.power(self._decay_rate, (epoch / self._decay_steps))
-        #return 0.001
 
     def update(self,
                *args,

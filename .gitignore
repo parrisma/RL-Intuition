@@ -26,3 +26,4 @@
 **/archive/*
 **/data/elastic/*
 **/.pytest_cache/*
+**/tictactoe/data/*

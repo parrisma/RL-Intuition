@@ -13,3 +13,4 @@ class Names(str, Enum):
     num_epoch = "num epoch"
     batch_size = "batch size"
     interim = "interim"
+    q_scale = "q_scale"

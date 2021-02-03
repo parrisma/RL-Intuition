@@ -1,10 +1,7 @@
 from typing import List, Dict, Callable, Tuple
-from os import path, mkdir
 import tensorflow as tf
 import numpy as np
-from copy import deepcopy
 from sklearn.utils import shuffle
-from src.lib.namegen.namegen import NameGen
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.net.neural_net import NeuralNet
 from src.tictactoe.util.vals_json import ValsJson
@@ -12,7 +9,6 @@ from src.tictactoe.net.hyper_params import HyperParams
 from src.tictactoe.net.names import Names
 from src.tictactoe.net.lr_schedule import LRScheduleCallback
 from src.tictactoe.net.lr_exponential_decay import LRExponentialDecay
-from src.tictactoe.net.lr_fixed_step_decay import LRFixedStepDecay
 
 
 class QNet(NeuralNet):
@@ -88,24 +84,10 @@ class QNet(NeuralNet):
         self._summary = None  # noqa
         self._q_values = None  # noqa
         self._lr_schedule = LRExponentialDecay(num_epoch=self._hyper_params.get(Names.num_epoch),
-                                               initial_lr=0.001,
+                                               initial_lr=self._hyper_params.get(Names.learning_rate),
                                                decay_rate=0.00005)
-        # self._lr_schedule = LRFixedStepDecay(lr_steps=[0.001, 0.001, 0.0005])
         self._reset()
         return
-
-    def _new_context(self) -> Tuple[str, str]:
-        """
-        Create a new context name and save area for mode build/run/test
-        :return: the name of the new context and its directory 'to use'
-        """
-        context_name = NameGen.generate_random_name()
-        context_dir = "{}//{}".format(self._base_dir_to_use, context_name)
-        while path.exists(context_dir):
-            context_name = NameGen.generate_random_name()
-            context_dir = "{}//{}".format(self._base_dir_to_use, context_name)
-        mkdir(context_dir)
-        return context_dir, context_name
 
     def _reset(self) -> None:
         """
@@ -114,7 +96,7 @@ class QNet(NeuralNet):
         self._model = None  # noqa
         self._summary = dict()
         self._actual_func = np.sin
-        self._dir_to_use, self._train_context_name = self._new_context()
+        self._dir_to_use, self._train_context_name = self.new_context(self._base_dir_to_use)
         self._lr_schedule.reset()
         return
 
@@ -122,9 +104,10 @@ class QNet(NeuralNet):
         """
         Set the Hyper Parameters for the Hello World Net
         """
-        self._hyper_params.set(Names.learning_rate, 0.001, "Adam Optimizer learning rate")
+        self._hyper_params.set(Names.learning_rate, 0.001, "Adam Optimizer initial learning rate")
         self._hyper_params.set(Names.num_epoch, 200, "Number of training epochs")
         self._hyper_params.set(Names.batch_size, 256, "Number of samples per training batch")
+        self._hyper_params.set(Names.q_scale, 100, "Scale down all Q Values bu this factor")
         return
 
     def build_context_name(self,
@@ -135,7 +118,7 @@ class QNet(NeuralNet):
         :params args: The unique name of the build context
         """
         if self._train_context_name is None:
-            self._new_context()
+            self.new_context(self._base_dir_to_use)
         return self._train_context_name
 
     def network_architecture(self,
@@ -163,7 +146,7 @@ class QNet(NeuralNet):
         encode = tf.keras.layers.Dense(32, activation=tf.nn.relu, name='encode_dense1')(ipt)
         encode = tf.keras.layers.Dense(256, activation=tf.nn.relu, name='encode_dense2')(encode)
         encode = tf.keras.layers.Dense(2048, activation=tf.nn.relu, name='encode_dense3')(encode)
-        encode = tf.keras.layers.Dense(1024, activation=tf.nn.relu, name='encode_dense4')(encode)
+        encode = tf.keras.layers.Dense(2048, activation=tf.nn.relu, name='encode_dense4')(encode)
         decode = tf.keras.layers.Dense(512, activation=tf.nn.relu, name='decode_input')(encode)
         decode = tf.keras.layers.Dense(outd, activation='linear', name='output')(decode)
 
@@ -258,15 +241,22 @@ class QNet(NeuralNet):
         return
 
     def _new_load_from_json(self,
-                            filename: str,
+                            _: str,
                             test_split: float = 0.2) -> List[np.ndarray]:
-        sz = 20000
-        xdim = 11
-        ydim = 9
+        """
+        A drop in replacement for _load_from_json that can be used to generate random test data sets
+        :param _: filename - not used
+        :param test_split: The size of the test data set as % of training set
+        :return:
+        """
+        sz = 20000  # Number of training data points to generate
+        xdim = 11  # the dimension of the X data
+        ydim = 9  # The dimension of the Y data
         x = np.zeros((sz, xdim))
         y = np.zeros((sz, ydim))
         d = dict()
         r = 0
+        self._trace.log().info("Generating [{}] test data items".format(sz))
 
         for i in range(sz):
             xd = np.random.choice([-1, 0, 1], xdim, p=[0.25, .5, .25])
@@ -278,15 +268,7 @@ class QNet(NeuralNet):
             x[i] = xd
             y[i] = d[xds]
 
-        x_train, y_train = shuffle(x, y)
-        # Test set is just a copy of training set
-        tst_idx = np.random.choice(range(0, len(x_train)), int(len(x_train) * test_split))
-        x_test = np.zeros((x_train.shape[0], x_train.shape[1]))
-        y_test = np.zeros((y_train.shape[0], y_train.shape[1]))
-        for i in tst_idx:
-            x_test[i] = deepcopy(x_train[i])
-            y_test[i] = deepcopy(y_train[i])
-        res = [x_train, x_test, y_train, y_test]
+        res = self._test_train_split(x, y, test_split)
         return res
 
     def _load_from_json(self,
@@ -296,7 +278,6 @@ class QNet(NeuralNet):
         Load XY training data from given JSON file
         :param filename: The JSON file name with the training data in
         :param test_split: The % (0.0 tp 1.0) of the training data to use as test data, default = 20% (0.2)
-        :param shuffle: If True shuffle the data before splitting, default = True
         :return: x_train, y_train, x_test, y_test
 
         Q Value data is supplied for each of players X and O, and then for each player the perspective of the
@@ -320,14 +301,14 @@ class QNet(NeuralNet):
         x = list()
         y = list()
         res = list()
-        data_dict = ValsJson().load_values_from_json(filename)
-        if data_dict is not None:
-            if type(data_dict):
+        self._q_values = ValsJson().load_values_from_json(filename)
+        if self._q_values is not None:
+            if type(self._q_values):
                 for player, plid in [['X', -1], ['O', 1]]:
-                    if player in data_dict:
+                    if player in self._q_values:
                         for perspective, psid in [['X', -1], ['O', 1]]:
-                            if perspective in data_dict[player]:
-                                for state, qvals in data_dict[player][perspective].items():
+                            if perspective in self._q_values[player]:
+                                for state, qvals in self._q_values[player][perspective].items():
                                     x_as_feature_str = "{}{}{}".format(plid, psid, state)
                                     x_as_feature_vec = np.zeros((11))
                                     i = 0
@@ -347,55 +328,50 @@ class QNet(NeuralNet):
                                                 "Bad value in Q Val state got [{}], expected only 0, 1 or -1".format(
                                                     x_as_feature_str[j]))
                                         i += 1
-                                    y_val = np.nan_to_num(qvals, nan=0) / 100
+                                    y_val = np.nan_to_num(qvals, nan=0) / self._hyper_params.get(Names.q_scale)
                                     x.append(x_as_feature_vec)
                                     y.append(y_val)
                 x = np.asarray(x)
                 y = np.asarray(y)
-                x_train, y_train = shuffle(x, y)
-                # Test set is just a copy of training set
-                sample_size = int(len(x_train) * test_split)
-                tst_idx = np.random.choice(range(0, len(x_train)), sample_size)
-                x_test = np.zeros((sample_size, x_train.shape[1]))
-                y_test = np.zeros((sample_size, y_train.shape[1]))
-
-                for i in range(0, sample_size):
-                    x_test[i] = x_train[tst_idx[i]]
-                    y_test[i] = y_train[tst_idx[i]]
-                res = [x_train, x_test, y_train, y_test]
+                res = self._test_train_split(x, y, test_split)
             else:
                 self._trace.log().info("No X and Y data found in [{}]".format(filename))
+                self._q_values = None  # noqa
         else:
             self._trace.log().info("Failed to load HelloWorld training data from [{}]".format(filename))
+            self._q_values = None  # noqa
         return res
 
-    def load_and_train_from_json(self,
-                                 filename: str) -> None:
+    @staticmethod
+    def _test_train_split(x: np.ndarray,
+                          y: np.ndarray,
+                          test_split: float) -> List[np.ndarray]:
         """
-        Load the X,Y data from the given json file and train the modle
-        :param filename: The file containing the X, Y data
+        Create training and test X,y from the given x & y
+        1. Shuffle x and y
+        2. Create a test x,y that are copies of a subset of x,y
+        Note: Test data is not a hidden subset of training data by design.
+        :param x: The full X data set
+        :param y: The full Y data set
+        :param test_split: The size of test data as % of training data
+        :return: x_train, y_train, x_test, y_tests
         """
-        if self._model is not None:
-            try:
-                x_train, x_test, y_train, y_test = self._load_from_json(filename)
-                self._trace.log().info("Training Starts [{}]".format(self._train_context_name))
-                self.train(x_train, y_train, x_test, y_test)
-                self._trace.log().info("Training Ends [{}]".format(self._train_context_name))
-                self._trace.log().info("Testing Starts [{}]".format(self._train_context_name))
-                self._test(x_test, y_test)
-                self._trace.log().info("Testing Ends [{}]".format(self._train_context_name))
-                self._dump_summary_to_json(self.summary_file)
-                self._trace.log().info("Saved Train & Test results as json [{}]".format(self.summary_file))
-            except Exception as e:
-                self._trace.log().info("Failed to load data to train model [{}]".format(str(e)))
-        else:
-            self._trace.log().info("Model not built, cannot load and train")
-        return
+        x_train, y_train = shuffle(x, y)
+        # Test set is just a copy of training set
+        sample_size = int(len(x_train) * test_split)
+        tst_idx = np.random.choice(range(0, len(x_train)), sample_size)
+        x_test = np.zeros((sample_size, x_train.shape[1]))
+        y_test = np.zeros((sample_size, y_train.shape[1]))
+
+        for i in range(0, sample_size):
+            x_test[i] = x_train[tst_idx[i]]
+            y_test[i] = y_train[tst_idx[i]]
+        return [x_train, y_train, x_test, y_test]
 
     def predict(self,
                 x_value: np.ndarray,
                 *args,
-                **kwargs) -> Tuple[np.float, np.float]:
+                **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param x_value: The X feature vector to predict
         :param args:
@@ -411,41 +387,67 @@ class QNet(NeuralNet):
             return 0, 0
 
         predictions = self._model.predict(x_value.reshape(1, 11))
+        y_expected = np.zeros((9))
         y_actual = predictions[0]
-        y_expected = y_actual
-
+        player = ['X', ' ', 'O'][x_value[0] + 1]
+        perspective = ['X', ' ', 'O'][x_value[1] + 1]
+        state = (np.array2string(x_value[2:])[1:-1]).replace(" ", "")
+        if player in self._q_values:
+            if perspective in self._q_values[player]:
+                if state in self._q_values[player][perspective]:
+                    y_expected = np.asarray(self._q_values[player][perspective][state])
+                    y_expected /= self._hyper_params.get(Names.q_scale)
         return y_actual, y_expected
 
     @property
-    def summary_file(self) -> str:
+    def _directory_to_use(self) -> str:
         """
-        The name of the training summary file.
-        :return: The full name and path of the training summary file.
+        The name of the root directory in which all model related files and data are stored.
+        :return: The name of the training context for the current training session
         """
-        return "{}//summary.json".format(self._dir_to_use)
+        return self._dir_to_use
 
     @property
-    def hyper_params_file(self) -> str:
+    def train_context_name(self) -> str:
         """
-        The name of the hyper parameters file
-        :return: The full name and path of the hyper parameters file.
+        The name of the training context
+        :return: The name of the training context for the current training session
         """
-        return "{}//hyper-parameters.json".format(self._dir_to_use)
+        return self._train_context_name
 
     @property
-    def model_checkpoint_file(self) -> str:
+    def trace(self) -> Trace:
         """
-        The file pattern to use for saving model checkpoints from 'fit' Callback
-        :return: The file pattern to use for saving model checkpoints from 'fit' Callback
+        The trace logger
+        :return: The trace logger
         """
-        return '{}//weights.{}.hdf5'.format(self._dir_to_use, '{epoch:02d}')
+        return self._trace
+
+    @property
+    def model(self) -> tf.keras.Model:
+        """
+        The tensorflow model
+        :return: The tensorflow model
+        """
+        return self._model
+
+    @property
+    def model_name(self) -> str:
+        """
+        The name of the model for saving and loading
+        This model is called Q Value Static because the model is trained on a fully converged set of
+        pre-calculated Q Values (static q values) rather than trained from the dynamic set of events
+        that were emitted during the game play. In this latter case the Q Value estimates are changing
+        (dynamic) as teh events flow in.
+        :return: The name of the model
+        """
+        return "q_value_static"
 
     def __str__(self) -> str:
         """
         Capture model summary (structure) as string
         :return: Model summary as string
         """
-        res = None
         if self._model is not None:
             summary = list()
             self._model.summary(print_fn=lambda s: summary.append(s))

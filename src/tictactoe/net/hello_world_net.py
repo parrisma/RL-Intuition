@@ -1,15 +1,13 @@
 from typing import List, Dict, Callable, Tuple
-from os import path, mkdir
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
-from src.lib.namegen.namegen import NameGen
 from src.lib.rltrace.trace import Trace
 from src.tictactoe.net.neural_net import NeuralNet
 from src.tictactoe.util.vals_json import ValsJson
 from src.tictactoe.net.hyper_params import HyperParams
 from src.tictactoe.net.names import Names
-from src.tictactoe.net.lr_10step_decay import LR10StepDecay
+from src.tictactoe.net.lr_exponential_decay import LRExponentialDecay
 
 
 class HelloWorldNet(NeuralNet):
@@ -67,7 +65,7 @@ class HelloWorldNet(NeuralNet):
                  dir_to_use: str):
         self._trace = trace
         self._base_dir_to_use = dir_to_use
-        self._dir_to_use, self._train_context_name = self._new_context()
+        self._dir_to_use, self._train_context_name = self.new_context(self._base_dir_to_use)
         self._hyper_params = HyperParams()
         self._set_hyper_params()
         self._model = None  # noqa
@@ -77,19 +75,6 @@ class HelloWorldNet(NeuralNet):
         self._reset()
         return
 
-    def _new_context(self) -> Tuple[str, str]:
-        """
-        Create a new context name and save area for mode bui.d/run/test
-        :return: the name of the new context and its directory 'to use'
-        """
-        context_name = NameGen.generate_random_name()
-        context_dir = "{}//{}".format(self._base_dir_to_use, context_name)
-        while path.exists(context_dir):
-            context_name = NameGen.generate_random_name()
-            context_dir = "{}//{}".format(self._base_dir_to_use, context_name)
-        mkdir(context_dir)
-        return context_dir, context_name
-
     def _reset(self) -> None:
         """
         Clear model status after rebuild
@@ -97,16 +82,16 @@ class HelloWorldNet(NeuralNet):
         self._model = None  # noqa
         self._summary = dict()
         self._actual_func = np.sin
-        self._dir_to_use, self._train_context_name = self._new_context()
+        self._dir_to_use, self._train_context_name = self.new_context(self._base_dir_to_use)
         return
 
     def _set_hyper_params(self) -> None:
         """
         Set the Hyper Parameters for the Hello World Net
         """
-        self._hyper_params.set(Names.learning_rate, 0.001, "Adam Optimizer learning rate")
-        self._hyper_params.set(Names.num_epoch, 1000, "Number of training epochs")
-        self._hyper_params.set(Names.batch_size, 32, "Number of samples per training batch")
+        self._hyper_params.set(Names.learning_rate, 0.001, "Adam Optimizer Initial learning rate")
+        self._hyper_params.set(Names.num_epoch, 500, "Number of training epochs")
+        self._hyper_params.set(Names.batch_size, 8, "Number of samples per training batch")
         return
 
     def build_context_name(self,
@@ -139,11 +124,10 @@ class HelloWorldNet(NeuralNet):
         self._model = tf.keras.models.Sequential(
             [
                 tf.keras.layers.Dense(input_shape=(1,), units=1, name='input'),
-                tf.keras.layers.Dense(80, activation=tf.nn.relu, name='dense1'),
+                tf.keras.layers.Dense(128, activation=tf.nn.relu, name='dense1'),
+                tf.keras.layers.Dense(256, activation=tf.nn.relu, name='dense2'),
                 tf.keras.layers.Dropout(.1, name='dropout-1-10pct'),
-                tf.keras.layers.Dense(400, activation=tf.nn.relu, name='dense2'),
-                tf.keras.layers.Dropout(.1, name='dropout-2-10pct'),
-                tf.keras.layers.Dense(40, activation=tf.nn.relu, name='dense3'),
+                tf.keras.layers.Dense(64, activation=tf.nn.relu, name='dense3'),
                 tf.keras.layers.Dense(1, name='output')
             ]
         )
@@ -194,7 +178,9 @@ class HelloWorldNet(NeuralNet):
                                                                summary=self._summary,
                                                                summary_file_root=Names.predictions_interim),
                                              tf.keras.callbacks.LearningRateScheduler(
-                                                 LR10StepDecay(num_epochs).lr_10step_decay)
+                                                 LRExponentialDecay(num_epoch=num_epochs,
+                                                                    initial_lr=self._hyper_params.get(
+                                                                        Names.learning_rate)).lr)
                                              ]
                                   )
         self._test(x_test, y_test)
@@ -268,35 +254,12 @@ class HelloWorldNet(NeuralNet):
                                                                         test_size=test_split,
                                                                         random_state=42,
                                                                         shuffle=shuffle)
-                res = [x_train, x_test, y_train, y_test]
+                res = [x_train, y_train, x_test, y_test]
             else:
                 self._trace.log().info("No X and Y data found in [{}]".format(filename))
         else:
             self._trace.log().info("Failed to load HelloWorld training data from [{}]".format(filename))
         return res
-
-    def load_and_train_from_json(self,
-                                 filename: str) -> None:
-        """
-        Load the X,Y data from the given json file and train the modle
-        :param filename: The file containing the X, Y data
-        """
-        if self._model is not None:
-            try:
-                x_train, x_test, y_train, y_test = self._load_from_json(filename)
-                self._trace.log().info("Training Starts [{}]".format(self._train_context_name))
-                self.train(x_train, y_train, x_test, y_test)
-                self._trace.log().info("Training Ends [{}]".format(self._train_context_name))
-                self._trace.log().info("Testing Starts [{}]".format(self._train_context_name))
-                self._test(x_test, y_test)
-                self._trace.log().info("Testing Ends [{}]".format(self._train_context_name))
-                self._dump_summary_to_json(self.summary_file)
-                self._trace.log().info("Saved Train & Test results as json [{}]".format(self.summary_file))
-            except Exception as e:
-                self._trace.log().info("Failed to load data to train model [{}]".format(str(e)))
-        else:
-            self._trace.log().info("Model not built, cannot load and train")
-        return
 
     def predict(self,
                 x_value: float,
@@ -391,28 +354,44 @@ class HelloWorldNet(NeuralNet):
         return
 
     @property
-    def summary_file(self) -> str:
+    def _directory_to_use(self) -> str:
         """
-        The name of the training summary file.
-        :return: The full name and path of the training summary file.
+        The name of the root directory in which all model related files and data are stored.
+        :return: The name of the training context for the current training session
         """
-        return "{}//summary.json".format(self._dir_to_use)
+        return self._dir_to_use
 
     @property
-    def hyper_params_file(self) -> str:
+    def train_context_name(self) -> str:
         """
-        The name of the hyper parameters file
-        :return: The full name and path of the hyper parameters file.
+        The name of the training context
+        :return: The name of the training context for the current training session
         """
-        return "{}//hyper-parameters.json".format(self._dir_to_use)
+        return self._train_context_name
 
     @property
-    def model_checkpoint_file(self) -> str:
+    def trace(self) -> Trace:
         """
-        The file pattern to use for saving model checkpoints from 'fit' Callback
-        :return: The file pattern to use for saving model checkpoints from 'fit' Callback
+        The trace logger
+        :return: The trace logger
         """
-        return '{}//weights.{}.hdf5'.format(self._dir_to_use, '{epoch:02d}')
+        return self._trace
+
+    @property
+    def model(self) -> tf.keras.Model:
+        """
+        The tensorflow model
+        :return: The tensorflow model
+        """
+        return self._model
+
+    @property
+    def model_name(self) -> str:
+        """
+        The name of the model for saving and loading
+        :return: The name of the model
+        """
+        return "hello_world"
 
     def __str__(self) -> str:
         """
